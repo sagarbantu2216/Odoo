@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import re
@@ -14,21 +13,36 @@ except ImportError:
     phonenumbers = None
 
 
+def _cc_checker(country_code, code_type):
+    return lambda endpoint: get_cc_module(country_code, code_type).is_valid(endpoint)
+
+
+def _re_sanitizer(expression):
+    return lambda endpoint: (res.group(0) if (res := re.search(expression, endpoint)) else endpoint)
+
+
 PEPPOL_ENDPOINT_RULES = {
-    '0007': ['se', 'orgnr'],
-    '0088': ['ean'],
-    '0184': ['dk', 'cvr'],
-    '0192': ['no', 'orgnr'],
-    '0208': ['be', 'vat'],
+    '0007': _cc_checker('se', 'orgnr'),
+    '0088': ean.is_valid,
+    '0184': _cc_checker('dk', 'cvr'),
+    '0192': _cc_checker('no', 'orgnr'),
+    '0208': _cc_checker('be', 'vat'),
 }
 
-PEPPOL_ENDPOINT_WARNING = {
-    '0201': ['regex', '[0-9a-zA-Z]{6}$'],
-    '0210': ['it', 'codicefiscale'],
-    '0211': ['it', 'iva'],
-    '9906': ['it', 'iva'],
-    '9907': ['it', 'codicefiscale'],
-    '0151': ['au', 'abn'],
+PEPPOL_ENDPOINT_WARNINGS = {
+    '0151': _cc_checker('au', 'abn'),
+    '0201': lambda endpoint: bool(re.match('[0-9a-zA-Z]{6}$', endpoint)),
+    '0210': _cc_checker('it', 'codicefiscale'),
+    '0211': _cc_checker('it', 'iva'),
+    '9906': _cc_checker('it', 'iva'),
+    '9907': _cc_checker('it', 'codicefiscale'),
+}
+
+PEPPOL_ENDPOINT_SANITIZERS = {
+    '0007': _re_sanitizer(r'\d{10}'),
+    '0184': _re_sanitizer(r'\d{8}'),
+    '0192': _re_sanitizer(r'\d{9}'),
+    '0208': _re_sanitizer(r'\d{10}'),
 }
 
 
@@ -42,23 +56,21 @@ class ResCompany(models.Model):
     )
     account_peppol_migration_key = fields.Char(string="Migration Key")
     account_peppol_phone_number = fields.Char(
-        string='Phone number (for validation)',
+        string='Mobile number',
         compute='_compute_account_peppol_phone_number', store=True, readonly=False,
-        help='You will receive a verification code to this phone number',
+        help='You will receive a verification code to this mobile number',
     )
     account_peppol_proxy_state = fields.Selection(
         selection=[
             ('not_registered', 'Not registered'),
-            ('not_verified', 'Not verified'),
-            ('sent_verification', 'Verification code sent'),
-            ('pending', 'Pending'),
-            ('active', 'Active'),
+            ('in_verification', 'In verification'),
+            ('sender', 'Can send but not receive'),
+            ('smp_registration', 'Can send, pending registration to receive'),
+            ('receiver', 'Can send and receive'),
             ('rejected', 'Rejected'),
-            ('canceled', 'Canceled'),
         ],
         string='PEPPOL status', required=True, default='not_registered',
     )
-    is_account_peppol_participant = fields.Boolean(string='PEPPOL Participant')
     peppol_eas = fields.Selection(related='partner_id.peppol_eas', readonly=False)
     peppol_endpoint = fields.Char(related='partner_id.peppol_endpoint', readonly=False)
     peppol_purchase_journal_id = fields.Many2one(
@@ -77,7 +89,7 @@ class ResCompany(models.Model):
         self.ensure_one()
 
         error_message = _(
-            "Please enter the phone number in the correct international format.\n"
+            "Please enter the mobile number in the correct international format.\n"
             "For example: +32123456789, where +32 is the country code.\n"
             "Currently, only European countries are supported.")
 
@@ -102,20 +114,9 @@ class ResCompany(models.Model):
 
     def _check_peppol_endpoint_number(self, warning=False):
         self.ensure_one()
+        peppol_dict = PEPPOL_ENDPOINT_WARNINGS if warning else PEPPOL_ENDPOINT_RULES
 
-        peppol_dict = PEPPOL_ENDPOINT_WARNING if warning else PEPPOL_ENDPOINT_RULES
-        endpoint_rule = peppol_dict.get(self.peppol_eas)
-        if not endpoint_rule:
-            return True
-
-        if endpoint_rule[0] == 'regex':
-            return bool(re.match(endpoint_rule[1], self.peppol_endpoint))
-
-        if endpoint_rule[0] == 'ean':
-            check_module = ean
-        else:
-            check_module = get_cc_module(endpoint_rule[0], endpoint_rule[1])
-        return check_module.is_valid(self.peppol_endpoint)
+        return True if (endpoint_rule := peppol_dict.get(self.peppol_eas)) is None else endpoint_rule(self.peppol_endpoint)
 
     # -------------------------------------------------------------------------
     # CONSTRAINTS
@@ -191,27 +192,73 @@ class ResCompany(models.Model):
 
     @api.model
     def _sanitize_peppol_endpoint(self, vals, eas=False, endpoint=False):
-        if 'peppol_eas' not in vals and 'peppol_endpoint' not in vals:
+        if not (peppol_eas := vals.get('peppol_eas', eas)) or not (peppol_endpoint := vals.get('peppol_endpoint', endpoint)):
             return vals
 
-        peppol_eas = vals['peppol_eas'] if 'peppol_eas' in vals else eas # let users remove the value
-        peppol_endpoint = vals['peppol_endpoint'] if 'peppol_endpoint' in vals else endpoint
-        if not peppol_eas or not peppol_endpoint:
-            return vals
+        if sanitizer := PEPPOL_ENDPOINT_SANITIZERS.get(peppol_eas):
+            vals['peppol_endpoint'] = sanitizer(peppol_endpoint)
 
-        if peppol_eas == '0208':
-            cbe_match = re.search('[0-9]{10}', peppol_endpoint)
-            if bool(cbe_match):
-                vals['peppol_endpoint'] = cbe_match.group(0)
         return vals
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             vals = self._sanitize_peppol_endpoint(vals)
-        return super().create(vals_list)
+
+        res = super().create(vals_list)
+        if res:
+            for company in res:
+                self.env['ir.default'].sudo().set(
+                    'res.partner',
+                    'peppol_verification_state',
+                    'not_verified',
+                    company_id=company.id,
+                )
+        return res
 
     def write(self, vals):
         for company in self:
             vals = self._sanitize_peppol_endpoint(vals, company.peppol_eas, company.peppol_endpoint)
         return super().write(vals)
+
+    # -------------------------------------------------------------------------
+    # PEPPOL PARTICIPANT MANAGEMENT
+    # -------------------------------------------------------------------------
+
+    def _peppol_modules_document_types(self):
+        """Override this function to add supported document types as modules are installed.
+
+        :returns: dictionary of the form: {module_name: [(document identifier, document_name)]}
+        """
+        return {
+            'default': {
+                "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1":
+                    "Peppol BIS Billing UBL Invoice V3",
+                "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2::CreditNote##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1":
+                    "Peppol BIS Billing UBL CreditNote V3",
+                "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#compliant#urn:fdc:nen.nl:nlcius:v1.0::2.1":
+                    "SI-UBL 2.0 Invoice",
+                "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2::CreditNote##urn:cen.eu:en16931:2017#compliant#urn:fdc:nen.nl:nlcius:v1.0::2.1":
+                    "SI-UBL 2.0 CreditNote",
+                "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#conformant#urn:fdc:peppol.eu:2017:poacc:billing:international:sg:3.0::2.1":
+                    "SG Peppol BIS Billing 3.0 Invoice",
+                "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2::CreditNote##urn:cen.eu:en16931:2017#conformant#urn:fdc:peppol.eu:2017:poacc:billing:international:sg:3.0::2.1":
+                    "SG Peppol BIS Billing 3.0 Credit Note",
+                "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0::2.1":
+                    "XRechnung UBL Invoice V2.0",
+                "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2::CreditNote##urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0::2.1":
+                    "XRechnung UBL CreditNote V2.0",
+                "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#conformant#urn:fdc:peppol.eu:2017:poacc:billing:international:aunz:3.0::2.1":
+                    "AU-NZ Peppol BIS Billing 3.0 Invoice",
+                "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2::CreditNote##urn:cen.eu:en16931:2017#conformant#urn:fdc:peppol.eu:2017:poacc:billing:international:aunz:3.0::2.1":
+                    "AU-NZ Peppol BIS Billing 3.0 CreditNote",
+            }
+        }
+
+    def _peppol_supported_document_types(self):
+        """Returns a flattened dictionary of all supported document types."""
+        return {
+            identifier: document_name
+            for module, identifiers in self._peppol_modules_document_types().items()
+            for identifier, document_name in identifiers.items()
+        }

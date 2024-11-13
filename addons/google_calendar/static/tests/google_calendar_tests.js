@@ -1,11 +1,9 @@
 /** @odoo-module **/
 
-import { click, getFixture, patchDate } from "@web/../tests/helpers/utils";
+import { click, getFixture, patchDate, makeDeferred, nextTick} from "@web/../tests/helpers/utils";
 import { makeView, setupViewRegistries } from "@web/../tests/views/helpers";
-import { registry } from "@web/core/registry";
-import { userService } from "@web/core/user_service";
-
-const serviceRegistry = registry.category("services");
+import { patchUserWithCleanup } from "@web/../tests/helpers/mock_services";
+import { createWebClient, doAction } from "@web/../tests/webclient/helpers";
 
 let target;
 let serverData;
@@ -34,7 +32,7 @@ QUnit.module('Google Calendar', {
                         {id: 5, user_id: uid, partner_id: 4, name: "event 1", start: "2016-12-13 15:55:05", stop: "2016-12-15 18:55:05", allday: false, partner_ids: [4], type: 2},
                         {id: 6, user_id: uid, partner_id: 5, name: "event 2", start: "2016-12-18 08:00:00", stop: "2016-12-18 09:00:00", allday: false, partner_ids: [4], type: 3}
                     ],
-                    check_access_rights: function () {
+                    has_access: function () {
                         return Promise.resolve(true);
                     }
                 },
@@ -80,20 +78,11 @@ QUnit.module('Google Calendar', {
         };
         target = getFixture();
         setupViewRegistries();
-        serviceRegistry.add(
-            "user",
-            {
-                ...userService,
-                start() {
-                    const fakeUserService = userService.start(...arguments);
-                    Object.defineProperty(fakeUserService, "userId", {
-                        get: () => uid,
-                    });
-                    return fakeUserService;
-                },
+        patchUserWithCleanup({
+            get userId() {
+                return uid;
             },
-            { force: true }
-        );
+        });
     }
 }, function () {
 
@@ -132,13 +121,19 @@ QUnit.module('Google Calendar', {
                     return Promise.resolve({
                         google_calendar: true,
                     });
+                } else if (route === "/web/dataset/call_kw/res.users/check_synchronization_status") {
+                    return Promise.resolve({
+                        google_calendar: 'sync_active',
+                    });
+                } else if (route === "/web/dataset/call_kw/calendar.event/get_default_duration") {
+                    return 3.25;
                 }
             },
         });
         // select the partner filter
         await click(target.querySelector('.o_calendar_filter_item[data-value=all] input'));
         // sync_data was called a first time without filter, event from google calendar was created twice
-        assert.containsN(target, '.fc-event-container', 4, "should display 4 events on the month");
+        assert.containsN(target, '.fc-event', 4, "should display 4 events on the month");
 
         await click(target.querySelector('.o_datetime_picker_header .o_next'));
         await click(target.querySelector('.o_datetime_picker .o_date_item_cell'));
@@ -159,6 +154,76 @@ QUnit.module('Google Calendar', {
             "/web/dataset/call_kw/calendar.event/search_read",
         ], 'should do a search_read before and after the call to sync_data');
 
-        assert.containsN(target, '.fc-event-container', 7, "should now display 7 events on the month");
+        assert.containsN(target, '.fc-event', 7, "should now display 7 events on the month");
+    });
+
+    QUnit.test("component is destroyed while sync google calendar", async function (assert) {
+        assert.expect(4);
+        const def = makeDeferred();
+        serverData.actions = {
+            1: {
+                id: 1,
+                name: "Partners",
+                res_model: "calendar.event",
+                type: "ir.actions.act_window",
+                views: [
+                    [false, "list"],
+                    [false, "calendar"],
+                ],
+            },
+        };
+
+        serverData.views = {
+            "calendar.event,false,calendar": `
+                <calendar class="o_calendar_test" js_class="attendee_calendar" date_start="start" date_stop="stop">
+                    <field name="name"/>
+                    <field name="partner_ids" write_model="filter_partner" write_field="partner_id"/>
+                </calendar>`,
+            "calendar.event,false,list": `<list sample="1" />`,
+            "calendar.event,false,search": `<search />`,
+        };
+
+        const webClient = await createWebClient({
+            serverData,
+            async mockRPC(route, args) {
+                if (route === '/google_calendar/sync_data') {
+                    assert.step(route);
+                    return def;
+                } else if (route === '/web/dataset/call_kw/calendar.event/search_read') {
+                    assert.step(route);
+                } else if (route === '/web/dataset/call_kw/res.partner/get_attendee_detail') {
+                    return Promise.resolve([]);
+                } else if (route === '/web/dataset/call_kw/res.users/has_group') {
+                    return Promise.resolve(true);
+                } else if (route === '/calendar/check_credentials') {
+                    return Promise.resolve({
+                        google_calendar: true,
+                    });
+                } else if (route === "/web/dataset/call_kw/res.users/check_synchronization_status") {
+                    return Promise.resolve({
+                        google_calendar: 'sync_active',
+                    });
+                } else if (route === "/web/dataset/call_kw/calendar.event/get_default_duration") {
+                    return 3.25;
+                }
+            },
+        });
+
+        await doAction(webClient, 1);
+
+        click(target.querySelector(".o_cp_switch_buttons .o_calendar"));
+        await nextTick();
+
+        click(target.querySelector(".o_cp_switch_buttons .o_calendar"));
+        await nextTick();
+
+        def.resolve();
+        await nextTick();
+
+        assert.verifySteps([
+            "/google_calendar/sync_data",
+            "/google_calendar/sync_data",
+            "/web/dataset/call_kw/calendar.event/search_read"
+        ], "Correct RPC calls were made");
     });
 });

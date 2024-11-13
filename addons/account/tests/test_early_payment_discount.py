@@ -9,8 +9,9 @@ from odoo import fields, Command
 class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
 
     @classmethod
-    def setUpClass(cls, chart_template_ref=None):
-        super().setUpClass(chart_template_ref=chart_template_ref)
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.other_currency = cls.setup_other_currency('EUR')
         # Payment Terms
         cls.early_pay_10_percents_10_days = cls.env['account.payment.term'].create({
             'name': '10% discount if paid within 10 days',
@@ -51,24 +52,6 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
                 })
             ]
         })
-
-    def assert_tax_totals(self, document, expected_values):
-        main_keys_to_ignore = {
-            'formatted_amount_total', 'formatted_amount_untaxed', 'display_tax_base', 'subtotals_order'}
-        group_keys_to_ignore = {'group_key', 'tax_group_id', 'tax_group_name',
-                                'formatted_tax_group_amount', 'formatted_tax_group_base_amount'}
-        subtotals_keys_to_ignore = {'formatted_amount'}
-        to_compare = document.copy()
-        for key in main_keys_to_ignore:
-            del to_compare[key]
-        for key in group_keys_to_ignore:
-            for groups in to_compare['groups_by_subtotal'].values():
-                for group in groups:
-                    del group[key]
-        for key in subtotals_keys_to_ignore:
-            for subtotal in to_compare['subtotals']:
-                del subtotal[key]
-        self.assertEqual(to_compare, expected_values)
 
     # ========================== Tests Payment Terms ==========================
     def test_early_payment_end_date(self):
@@ -141,8 +124,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             {'display_type': 'epd',             'balance': -100.0},
             {'display_type': 'epd',             'balance': 100.0},
             {'display_type': 'product',         'balance': -1000.0},
-            {'display_type': 'tax',             'balance': -150},
-            {'display_type': 'tax',             'balance': 15.0},
+            {'display_type': 'tax',             'balance': -135},
             {'display_type': 'tax',             'balance': -0.05},
             {'display_type': 'payment_term',    'balance': 1135.05},
         ], {
@@ -159,7 +141,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 1000.0, 'tax_ids': []})],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
@@ -170,14 +152,10 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
         })._create_payments()
 
         self.assertTrue(payments.is_reconciled)
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
-            {'amount_currency': -1000.0},
-            {
-                'account_id': self.env.company['account_journal_early_pay_discount_loss_account_id'].id,
-                'amount_currency': 100.0,
-            },
-            {'amount_currency': 900.0},
-        ])
+        self.assertEqual(
+            payments.move_id.line_ids.sorted('balance').mapped('amount_currency'),
+            [-1000.0, 100.0, 900.0],
+        )
 
     def test_register_discounted_payment_on_single_invoice_with_fixed_tax_1(self):
         self.early_pay_10_percents_10_days.early_pay_discount_computation = 'included'
@@ -207,7 +185,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
         })._create_payments()
 
         self.assertTrue(payments.is_reconciled)
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -1552.55, 'tax_tag_invert': False},
             {'amount_currency': -150.0, 'tax_tag_invert': True},
             {'amount_currency': -22.5, 'tax_tag_invert': True},
@@ -243,7 +221,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             ._create_payments()
 
         self.assertTrue(payments.is_reconciled)
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -51.80, 'tax_tag_invert': False},
             {'amount_currency': -5.00, 'tax_tag_invert': True},
             {'amount_currency': -0.75, 'tax_tag_invert': True},
@@ -267,7 +245,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
         })._create_payments()
 
         self.assertTrue(payments.is_reconciled)
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -1552.5, 'tax_tag_invert': False},
             {'amount_currency': -150.0, 'tax_tag_invert': True},
             {'amount_currency': -22.5, 'tax_tag_invert': True},
@@ -291,7 +269,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
         })._create_payments()
 
         self.assertTrue(payments.is_reconciled)
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -1725.0, 'tax_tag_invert': False},
             {'amount_currency': 22.5, 'tax_tag_invert': False},
             {'amount_currency': 150.0, 'tax_tag_invert': False},
@@ -319,7 +297,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
         })._create_payments()
 
         self.assertTrue(payments.is_reconciled)
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -2835.0, 'tax_tag_invert': False},
             {'amount_currency': -200.0, 'tax_tag_invert': False},
             {'amount_currency': -100.0, 'tax_tag_invert': True},
@@ -334,7 +312,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 1000.0, 'tax_ids': []})],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
@@ -343,7 +321,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 2000.0, 'tax_ids': []})],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
@@ -354,7 +332,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'payment_date': '2019-01-01', 'group_payment': True
         })._create_payments()
         self.assertTrue(payments.is_reconciled)
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -3000.0},
             {'amount_currency': 300.0},
             {'amount_currency': 2700},
@@ -367,7 +345,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 1000.0, 'tax_ids': [Command.set(self.product_a.taxes_id.ids)]})],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
@@ -376,7 +354,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 2000.0, 'tax_ids': []})],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
@@ -387,7 +365,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'payment_date': '2019-01-01', 'group_payment': True
         })._create_payments()
         self.assertTrue(payments.is_reconciled)
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -3150.0},
             {'amount_currency': 300.0},
             {'amount_currency': 2850},
@@ -400,7 +378,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 1000.0, 'tax_ids': [Command.set(self.product_a.taxes_id.ids)]})],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
@@ -409,7 +387,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 2000.0, 'tax_ids': []})],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
@@ -420,7 +398,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'payment_date': '2019-01-01', 'group_payment': True
         })._create_payments()
         self.assertTrue(payments.is_reconciled)
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -3135.0},
             {'amount_currency': 300.0},
             {'amount_currency': 2835.0},
@@ -433,7 +411,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2017-01-01',
             'invoice_date': '2017-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 1000.0, 'tax_ids': [Command.set(self.product_a.taxes_id.ids)]})],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
@@ -442,7 +420,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 2000.0, 'tax_ids': []})],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
@@ -453,7 +431,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'payment_date': '2019-01-01', 'group_payment': True
         })._create_payments()
         self.assertTrue(payments.is_reconciled)
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -3135.0},
             {'amount_currency': 200.0},
             {'amount_currency': 2935.0},
@@ -475,22 +453,26 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
                 line_form.quantity = 1
                 line_form.tax_ids.clear()
                 line_form.tax_ids.add(tax)
-            self.assert_tax_totals(invoice.tax_totals, {
-                'amount_untaxed': 1000,
-                'amount_total': 1090,
-                'groups_by_subtotal': {
-                    'Untaxed Amount': [
-                        {
-                            'tax_group_amount': 90,
-                            'tax_group_base_amount': 900,
-                        },
-                    ],
-                },
+            self._assert_tax_totals_summary(invoice.tax_totals, {
+                'same_tax_base': True,
+                'currency_id': self.env.company.currency_id.id,
+                'base_amount_currency': 1000.0,
+                'tax_amount_currency': 90.0,
+                'total_amount_currency': 1090.0,
                 'subtotals': [
                     {
                         'name': "Untaxed Amount",
-                        'amount': 1000,
-                    }
+                        'base_amount_currency': 1000.0,
+                        'tax_amount_currency': 90.0,
+                        'tax_groups': [
+                            {
+                                'id': tax.tax_group_id.id,
+                                'base_amount_currency': 900.0,
+                                'tax_amount_currency': 90.0,
+                                'display_base_amount_currency': 900.0,
+                            },
+                        ],
+                    },
                 ],
             })
 
@@ -557,7 +539,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             .create({'payment_date': '2019-01-01'})\
             ._create_payments()
 
-        self.assertRecordValues(payment.line_ids.sorted('balance'), [
+        self.assertRecordValues(payment.move_id.line_ids.sorted('balance'), [
             # pylint: disable=bad-whitespace
             {'amount_currency': -980.0, 'tax_ids': [],                  'tax_tag_ids': [],              'tax_tag_invert': False},
             {'amount_currency': -20.0,  'tax_ids': intracomm_tax.ids,   'tax_tag_ids': tax_tags[3].ids, 'tax_tag_invert': True},
@@ -647,7 +629,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
         tax = self.env['account.tax'].create({
             'name': 'Tax 21% included',
             'amount': 21,
-            'price_include': True,
+            'price_include_override': 'tax_included',
         })
 
         with Form(self.env['account.move'].with_context(default_move_type='out_invoice')) as invoice:
@@ -660,22 +642,26 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
                 line_form.quantity = 1
                 line_form.tax_ids.clear()
                 line_form.tax_ids.add(tax)
-            self.assert_tax_totals(invoice.tax_totals, {
-                'amount_untaxed': 100,
-                'amount_total': 120.58,
-                'groups_by_subtotal': {
-                    'Untaxed Amount': [
-                        {
-                            'tax_group_amount': 20.58,
-                            'tax_group_base_amount': 98,
-                        },
-                    ],
-                },
+            self._assert_tax_totals_summary(invoice.tax_totals, {
+                'same_tax_base': True,
+                'currency_id': self.env.company.currency_id.id,
+                'base_amount_currency': 100.0,
+                'tax_amount_currency': 20.58,
+                'total_amount_currency': 120.58,
                 'subtotals': [
                     {
                         'name': "Untaxed Amount",
-                        'amount': 100,
-                    }
+                        'base_amount_currency': 100.0,
+                        'tax_amount_currency': 20.58,
+                        'tax_groups': [
+                            {
+                                'id': tax.tax_group_id.id,
+                                'base_amount_currency': 98.0,
+                                'tax_amount_currency': 20.58,
+                                'display_base_amount_currency': 98.0,
+                            },
+                        ],
+                    },
                 ],
             })
 
@@ -691,11 +677,11 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             ],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
-        self.assertEqual(len(inv.line_ids), 6) # 1 prod, 1 tax, 2 epd, 1 epd tax discount, 1 payment terms
+        self.assertEqual(len(inv.line_ids), 5)  # 1 prod, 1 tax, 1 epd, 1 epd tax discount, 1 payment terms
         inv.write({'invoice_payment_term_id': self.pay_terms_a.id})
-        self.assertEqual(len(inv.line_ids), 3) # 1 prod, 1 tax, 1 payment terms
+        self.assertEqual(len(inv.line_ids), 3)  # 1 prod, 1 tax, 1 payment terms
         inv.write({'invoice_payment_term_id': self.early_pay_10_percents_10_days.id})
-        self.assertEqual(len(inv.line_ids), 6)
+        self.assertEqual(len(inv.line_ids), 5)
 
     def test_mixed_epd_with_tax_deleted_line(self):
         self.early_pay_10_percents_10_days.write({'early_pay_discount_computation': 'mixed'})
@@ -719,10 +705,10 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             ],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
-        self.assertEqual(len(inv.line_ids), 10) # 2 prod, 2 tax, 3 epd, 2 epd tax discount, 1 payment terms
+        self.assertEqual(len(inv.line_ids), 8)  # 2 prod, 2 tax, 1 epd, 2 epd tax discount, 1 payment terms
         inv.invoice_line_ids[1].unlink()
-        self.assertEqual(len(inv.line_ids), 6) # 1 prod, 1 tax, 2 epd, 1 epd tax discount, 1 payment terms
-        self.assertEqual(inv.amount_tax, 9.00) # $100.0 @ 10% tax (-10% epd)
+        self.assertEqual(len(inv.line_ids), 5)  # 1 prod, 1 tax, 1 epd, 1 epd tax discount, 1 payment terms
+        self.assertEqual(inv.amount_tax, 9.00)  # $100.0 @ 10% tax (-10% epd)
 
     def test_mixed_epd_with_rounding_issue(self):
         """
@@ -798,7 +784,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 1000.0, 'tax_ids': []})],
             'invoice_payment_term_id': self.pay_term_net_30_days.id,
         })
@@ -807,7 +793,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 2000.0, 'tax_ids': []})],
             'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
         })
@@ -818,7 +804,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'payment_date': '2019-01-01', 'group_payment': False
         })._create_payments()
         self.assertTrue(all(payments.mapped('is_reconciled')))
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -2000.0},
             {'amount_currency': -1000.0},
             {'amount_currency': 200.0},
@@ -838,7 +824,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 1000.0, 'tax_ids': []})],
             'invoice_payment_term_id': self.pay_term_net_30_days.id,
         })
@@ -847,7 +833,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'date': '2019-01-01',
             'invoice_date': '2019-01-01',
             'partner_id': self.partner_a.id,
-            'currency_id': self.currency_data['currency'].id,
+            'currency_id': self.other_currency.id,
             'invoice_line_ids': [Command.create({'product_id': self.product_a.id, 'price_unit': 2000.0, 'tax_ids': []})],
             'invoice_payment_term_id': self.pay_term_net_30_days.id,
         })
@@ -858,7 +844,7 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             'payment_date': '2019-01-01', 'group_payment': False
         })._create_payments()
         self.assertTrue(all(payments.mapped('is_reconciled')))
-        self.assertRecordValues(payments.line_ids.sorted('balance'), [
+        self.assertRecordValues(payments.move_id.line_ids.sorted('balance'), [
             {'amount_currency': -2000.0},
             {'amount_currency': -1000.0},
             {'amount_currency': 1000.0},
@@ -915,13 +901,8 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
                 'display_type': 'epd',
             },
             {
-                'balance': -15.0,
-                'tax_base_amount': 100.0,
-                'display_type': 'tax',
-            },
-            {
-                'balance': 1.5,
-                'tax_base_amount': -10.0,
+                'balance': -13.5,
+                'tax_base_amount': 90.0,
                 'display_type': 'tax',
             },
             {
@@ -963,3 +944,169 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
             self.fail(
                 "ValidationError raised unexpectedly for single-line payment term with EPD"
             )
+
+    def test_epd_entry_tag_invert_with_distinct_negative_invoice_line(self):
+        """
+        `tax_tag_invert` should be the same for all Early Payment Discount lines of a single entry
+        """
+
+        analytic_plan = self.env['account.analytic.plan'].create({
+            'name': 'existential plan',
+        })
+        analytic_account_a = self.env['account.analytic.account'].create({
+            'name': 'positive_account',
+            'plan_id': analytic_plan.id,
+        })
+        analytic_account_b = self.env['account.analytic.account'].create({
+            'name': 'negative_account',
+            'plan_id': analytic_plan.id,
+        })
+
+        invoice = self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.partner_a.id,
+            'invoice_date': '2019-01-10',
+            'date': '2019-01-10',
+            'invoice_line_ids': [
+                Command.create({
+                    'name': 'line',
+                    'price_unit': 2000,
+                    'tax_ids': self.tax_sale_a,
+                    'analytic_distribution': {str(analytic_account_a.id): 100},
+                }),
+                Command.create({
+                    'name': 'line',
+                    'price_unit': -1500,
+                    'tax_ids': self.tax_sale_a,
+                    'analytic_distribution': {str(analytic_account_b.id): 100},
+                }),
+            ],
+            'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
+        })
+        invoice.action_post()
+
+        bill = self.env['account.move'].create({
+            'move_type': 'in_invoice',
+            'partner_id': self.partner_b.id,
+            'invoice_date': '2019-01-10',
+            'date': '2019-01-10',
+            'invoice_line_ids': [
+                Command.create({
+                    'name': 'line',
+                    'price_unit': 3000,
+                    'tax_ids': self.tax_purchase_a,
+                    'analytic_distribution': {str(analytic_account_a.id): 100},
+                }),
+                Command.create({
+                    'name': 'line',
+                    'price_unit': -2250,
+                    'tax_ids': self.tax_purchase_a,
+                    'analytic_distribution': {str(analytic_account_b.id): 100},
+                }),
+            ],
+            'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
+        })
+        bill.action_post()
+
+        payments = self.env['account.payment.register'].with_context(
+            active_model='account.move',
+            active_ids=invoice.ids,
+        ).create({
+            'payment_date': '2019-01-01',
+        })._create_payments()
+        payment_moves = payments.move_id
+
+        for line in payment_moves.line_ids.filtered(lambda line: line.tax_repartition_line_id or line.tax_ids):
+            self.assertFalse(line.tax_tag_invert)
+
+        payments = self.env['account.payment.register'].with_context(
+            active_model='account.move',
+            active_ids=bill.ids,
+        ).create({
+            'payment_date': '2019-01-01',
+        })._create_payments()
+        payment_moves = payments.move_id
+
+        for line in payment_moves.line_ids.filtered(lambda line: line.tax_repartition_line_id or line.tax_ids):
+            self.assertTrue(line.tax_tag_invert)
+
+    def test_epd_multiple_repartition_lines(self):
+        """
+        In the case of multi repartition lines tax definition with an early payment discount
+        We want to make sure that the EPD lines are correct.
+        We want the rounding difference to be added to the "biggest" base line.
+        """
+        # Taxes.
+        common_values = {
+            'amount': 17.0,
+            'invoice_repartition_line_ids': [
+                Command.create({'repartition_type': 'base'}),
+                Command.create({'repartition_type': 'tax', 'factor_percent': 100.0}),
+                Command.create({'repartition_type': 'tax', 'factor_percent': -100.0}),
+            ],
+            'refund_repartition_line_ids': [
+                Command.create({'repartition_type': 'base'}),
+                Command.create({'repartition_type': 'tax', 'factor_percent': 100.0}),
+                Command.create({'repartition_type': 'tax', 'factor_percent': -100.0}),
+            ],
+        }
+
+        tax1, tax2 = self.env['account.tax'].create([
+            {'name': "tax1", **common_values},
+            {'name': "tax2", **common_values},
+        ])
+
+        # Early payment.
+        payment_term = self.env['account.payment.term'].create({
+            'name': "10% discount if paid within 10 days",
+            'early_discount': True,
+            'early_pay_discount_computation': 'included',
+            'discount_percentage': 2,
+            'discount_days': 10,
+            'line_ids': [Command.create({
+                'value': 'percent',
+                'nb_days': 0,
+                'value_amount': 100,
+            })]
+        })
+
+        # Invoice.
+        invoice = self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.partner_a.id,
+            'invoice_payment_term_id': payment_term.id,
+            'invoice_date': '2017-01-01',
+            'invoice_line_ids': [
+                Command.create({
+                    'name': "Line One",
+                    'price_unit': 739.95,
+                    'tax_ids': [Command.set(tax1.ids)],
+                }),
+                Command.create({
+                    'name': "Line Two",
+                    'price_unit': 37.80,
+                    'tax_ids': [Command.set(tax2.ids)],
+                }),
+            ],
+        })
+        invoice.action_post()
+
+        # Payment.
+        payment = self.env['account.payment.register']\
+            .with_context(active_model='account.move', active_ids=invoice.ids)\
+            .create({'payment_date': '2017-01-01'})\
+            ._create_payments()
+
+        self.assertRecordValues(payment.move_id.line_ids.sorted('amount_currency'), [
+            # Invoice's total:
+            {'amount_currency': -777.75},
+            # Base / tax lines:
+            {'amount_currency': -2.51},
+            {'amount_currency': -0.13},
+            {'amount_currency': 0.13},
+            {'amount_currency': 0.76},
+            {'amount_currency': 2.51},
+            {'amount_currency': 14.79},
+            # Discounted amount:
+            {'amount_currency': 762.2},
+        ])

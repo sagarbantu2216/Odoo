@@ -36,6 +36,8 @@ class AccountMove(models.Model):
         compute='_compute_edi_show_cancel_button')
     edi_show_abandon_cancel_button = fields.Boolean(
         compute='_compute_edi_show_abandon_cancel_button')
+    edi_show_force_cancel_button = fields.Boolean(
+        compute='_compute_edi_show_force_cancel_button')
 
     @api.depends('edi_document_ids.state')
     def _compute_edi_state(self):
@@ -51,6 +53,11 @@ class AccountMove(models.Model):
                 move.edi_state = 'to_cancel'
             else:
                 move.edi_state = False
+
+    @api.depends('edi_document_ids.state')
+    def _compute_edi_show_force_cancel_button(self):
+        for move in self:
+            move.edi_show_force_cancel_button = move._can_force_cancel()
 
     @api.depends('edi_document_ids.error')
     def _compute_edi_error_count(self):
@@ -69,14 +76,15 @@ class AccountMove(models.Model):
                 move.edi_blocking_level = error_doc.blocking_level
             else:
                 error_levels = set([doc.blocking_level for doc in move.edi_document_ids])
+                count = str(move.edi_error_count)
                 if 'error' in error_levels:
-                    move.edi_error_message = str(move.edi_error_count) + _(" Electronic invoicing error(s)")
+                    move.edi_error_message = _("%(count)s Electronic invoicing error(s)", count=count)
                     move.edi_blocking_level = 'error'
                 elif 'warning' in error_levels:
-                    move.edi_error_message = str(move.edi_error_count) + _(" Electronic invoicing warning(s)")
+                    move.edi_error_message = _("%(count)s Electronic invoicing warning(s)", count=count)
                     move.edi_blocking_level = 'warning'
                 else:
-                    move.edi_error_message = str(move.edi_error_count) + _(" Electronic invoicing info(s)")
+                    move.edi_error_message = _("%(count)s Electronic invoicing info(s)", count=count)
                     move.edi_blocking_level = 'info'
 
     @api.depends(
@@ -169,22 +177,6 @@ class AccountMove(models.Model):
                                         grouping_key to aggregate tax values together. The returned dictionary is added
                                         to each tax details in order to retrieve the full grouping_key later.
 
-        :param compute_mode:            Optional parameter to specify the method used to allocate the tax line amounts
-                                        among the invoice lines:
-                                        'tax_details' (the default) uses the AccountMove._get_query_tax_details method.
-                                        'compute_all' uses the AccountTax._compute_all method.
-
-                                        The 'tax_details' method takes the tax line balance and allocates it among the
-                                        invoice lines to which that tax applies, proportionately to the invoice lines'
-                                        base amounts. This always ensures that the sum of the tax amounts equals the
-                                        tax line's balance, which, depending on the constraints of a particular
-                                        localization, can be more appropriate when 'Round Globally' is set.
-
-                                        The 'compute_all' method returns, for each invoice line, the exact tax amounts
-                                        corresponding to the taxes applied to the invoice line. Depending on the
-                                        constraints of the particular localization, this can be more appropriate when
-                                        'Round per Line' is set.
-
         :return:                        The full tax details for the current invoice and for each invoice line
                                         separately. The returned dictionary is the following:
 
@@ -268,6 +260,14 @@ class AccountMove(models.Model):
             self.env.ref('account_edi.ir_cron_edi_network')._trigger()
         return posted
 
+    def button_force_cancel(self):
+        """ Cancel the invoice without waiting for the cancellation request to succeed.
+        """
+        for move in self:
+            to_cancel_edi_documents = move.edi_document_ids.filtered(lambda doc: doc.state == 'to_cancel')
+            move.message_post(body=_("This invoice was canceled while the EDIs %s still had a pending cancellation request.", ", ".join(to_cancel_edi_documents.mapped('edi_format_id.name'))))
+        self.button_cancel()
+
     def button_cancel(self):
         # OVERRIDE
         # Set the electronic document to be canceled and cancel immediately for synchronous formats.
@@ -301,7 +301,7 @@ class AccountMove(models.Model):
         '''
         to_cancel_documents = self.env['account.edi.document']
         for move in self:
-            move._check_fiscalyear_lock_date()
+            move._check_fiscal_lock_dates()
             is_move_marked = False
             for doc in move.edi_document_ids:
                 move_applicability = doc.edi_format_id._get_move_applicability(move)
@@ -330,7 +330,7 @@ class AccountMove(models.Model):
             if is_move_marked:
                 move.message_post(body=_("A request for cancellation of the EDI has been called off."))
 
-        documents.write({'state': 'sent'})
+        documents.write({'state': 'sent', 'error': False, 'blocking_level': False})
 
     def _get_edi_document(self, edi_format):
         return self.edi_document_ids.filtered(lambda d: d.edi_format_id == edi_format)
@@ -339,16 +339,17 @@ class AccountMove(models.Model):
         return self._get_edi_document(edi_format).sudo().attachment_id
 
     # this override is to make sure that the main attachment is not the edi xml otherwise the attachment viewer will not work correctly
-    def _message_set_main_attachment_id(self, attachment_ids):
-        if self.message_main_attachment_id and len(attachment_ids) > 1 and self.message_main_attachment_id in self.edi_document_ids.attachment_id:
-            self.message_main_attachment_id = self.env['ir.attachment']
-        super()._message_set_main_attachment_id(attachment_ids)
+    def _message_set_main_attachment_id(self, attachments, force=False, filter_xml=True):
+        if not force and len(attachments) > 1 and self.message_main_attachment_id in self.edi_document_ids.attachment_id:
+            force = True
+        super()._message_set_main_attachment_id(attachments, force=force, filter_xml=filter_xml)
 
     ####################################################
     # Business operations
     ####################################################
 
     def button_process_edi_web_services(self):
+        self.ensure_one()
         self.action_process_edi_web_services(with_commit=False)
 
     def action_process_edi_web_services(self, with_commit=True):

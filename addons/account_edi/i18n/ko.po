@@ -3,16 +3,15 @@
 # 	* account_edi
 # 
 # Translators:
-# Wil Odoo, 2023
-# Daye Jeong, 2024
+# Wil Odoo, 2024
 # 
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0\n"
+"Project-Id-Version: Odoo Server 18.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 21:55+0000\n"
-"PO-Revision-Date: 2023-10-26 23:09+0000\n"
-"Last-Translator: Daye Jeong, 2024\n"
+"POT-Creation-Date: 2024-09-25 08:39+0000\n"
+"PO-Revision-Date: 2024-09-25 09:41+0000\n"
+"Last-Translator: Wil Odoo, 2024\n"
 "Language-Team: Korean (https://app.transifex.com/odoo/teams/41243/ko/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -23,35 +22,30 @@ msgstr ""
 #. module: account_edi
 #. odoo-python
 #: code:addons/account_edi/models/account_move.py:0
-#, python-format
-msgid " Electronic invoicing error(s)"
-msgstr "전자 청구서 오류"
+msgid "%(count)s Electronic invoicing error(s)"
+msgstr ""
 
 #. module: account_edi
 #. odoo-python
 #: code:addons/account_edi/models/account_move.py:0
-#, python-format
-msgid " Electronic invoicing info(s)"
-msgstr "전자 청구서 정보"
+msgid "%(count)s Electronic invoicing info(s)"
+msgstr ""
 
 #. module: account_edi
 #. odoo-python
 #: code:addons/account_edi/models/account_move.py:0
-#, python-format
-msgid " Electronic invoicing warning(s)"
-msgstr "전자 청구서 주의 사항"
+msgid "%(count)s Electronic invoicing warning(s)"
+msgstr ""
 
 #. module: account_edi
 #. odoo-python
 #: code:addons/account_edi/models/account_move.py:0
-#, python-format
 msgid "A cancellation of the EDI has been requested."
 msgstr "EDI 취소를 요청하였습니다."
 
 #. module: account_edi
 #. odoo-python
 #: code:addons/account_edi/models/account_move.py:0
-#, python-format
 msgid "A request for cancellation of the EDI has been called off."
 msgstr "EDI 취소 요청을 철회하였습니다."
 
@@ -59,6 +53,13 @@ msgstr "EDI 취소 요청을 철회하였습니다."
 #: model:ir.model,name:account_edi.model_account_move_send
 msgid "Account Move Send"
 msgstr "계정 작업 전송"
+
+#. module: account_edi
+#: model_terms:ir.ui.view,arch_db:account_edi.view_move_form_inherit
+msgid ""
+"Are you sure you want to cancel this invoice without waiting for the EDI "
+"document to be canceled?"
+msgstr "EDI 문서가 취소되기 전 이 청구서를 먼저 취소하시겠습니까?"
 
 #. module: account_edi
 #: model:ir.model,name:account_edi.model_ir_attachment
@@ -98,7 +99,6 @@ msgstr "취소됨"
 #. module: account_edi
 #. odoo-python
 #: code:addons/account_edi/models/account_journal.py:0
-#, python-format
 msgid ""
 "Cannot deactivate (%s) on this journal because not all documents are "
 "synchronized"
@@ -160,7 +160,6 @@ msgstr "EDI: 웹서비스 작업 실행"
 #. module: account_edi
 #: model:ir.model.fields,field_description:account_edi.field_account_bank_statement_line__edi_blocking_level
 #: model:ir.model.fields,field_description:account_edi.field_account_move__edi_blocking_level
-#: model:ir.model.fields,field_description:account_edi.field_account_payment__edi_blocking_level
 msgid "Edi Blocking Level"
 msgstr "EDI 차단 수준"
 
@@ -172,21 +171,18 @@ msgstr "EDI 콘텐츠"
 #. module: account_edi
 #: model:ir.model.fields,field_description:account_edi.field_account_bank_statement_line__edi_document_ids
 #: model:ir.model.fields,field_description:account_edi.field_account_move__edi_document_ids
-#: model:ir.model.fields,field_description:account_edi.field_account_payment__edi_document_ids
 msgid "Edi Document"
 msgstr "Edi 문서"
 
 #. module: account_edi
 #: model:ir.model.fields,field_description:account_edi.field_account_bank_statement_line__edi_error_count
 #: model:ir.model.fields,field_description:account_edi.field_account_move__edi_error_count
-#: model:ir.model.fields,field_description:account_edi.field_account_payment__edi_error_count
 msgid "Edi Error Count"
 msgstr "Edi 오류 수"
 
 #. module: account_edi
 #: model:ir.model.fields,field_description:account_edi.field_account_bank_statement_line__edi_error_message
 #: model:ir.model.fields,field_description:account_edi.field_account_move__edi_error_message
-#: model:ir.model.fields,field_description:account_edi.field_account_payment__edi_error_message
 msgid "Edi Error Message"
 msgstr "EDI 오류 메시지"
 
@@ -198,21 +194,24 @@ msgstr "Edi 포맷"
 #. module: account_edi
 #: model:ir.model.fields,field_description:account_edi.field_account_bank_statement_line__edi_show_abandon_cancel_button
 #: model:ir.model.fields,field_description:account_edi.field_account_move__edi_show_abandon_cancel_button
-#: model:ir.model.fields,field_description:account_edi.field_account_payment__edi_show_abandon_cancel_button
 msgid "Edi Show Abandon Cancel Button"
 msgstr "EDI 표시 대기처리 취소 버튼"
 
 #. module: account_edi
 #: model:ir.model.fields,field_description:account_edi.field_account_bank_statement_line__edi_show_cancel_button
 #: model:ir.model.fields,field_description:account_edi.field_account_move__edi_show_cancel_button
-#: model:ir.model.fields,field_description:account_edi.field_account_payment__edi_show_cancel_button
 msgid "Edi Show Cancel Button"
 msgstr "Edi 취소버튼 표시"
 
 #. module: account_edi
+#: model:ir.model.fields,field_description:account_edi.field_account_bank_statement_line__edi_show_force_cancel_button
+#: model:ir.model.fields,field_description:account_edi.field_account_move__edi_show_force_cancel_button
+msgid "Edi Show Force Cancel Button"
+msgstr "Edi 강제 취소 버튼 표시"
+
+#. module: account_edi
 #: model:ir.model.fields,field_description:account_edi.field_account_bank_statement_line__edi_web_services_to_process
 #: model:ir.model.fields,field_description:account_edi.field_account_move__edi_web_services_to_process
-#: model:ir.model.fields,field_description:account_edi.field_account_payment__edi_web_services_to_process
 msgid "Edi Web Services To Process"
 msgstr "Edi 처리할 웹서비스"
 
@@ -226,7 +225,6 @@ msgstr "account.move를 위한 전자 문서"
 #: model:ir.model.fields,field_description:account_edi.field_account_bank_statement_line__edi_state
 #: model:ir.model.fields,field_description:account_edi.field_account_journal__edi_format_ids
 #: model:ir.model.fields,field_description:account_edi.field_account_move__edi_state
-#: model:ir.model.fields,field_description:account_edi.field_account_payment__edi_state
 msgid "Electronic invoicing"
 msgstr "전자 청구서"
 
@@ -248,6 +246,11 @@ msgid "Error"
 msgstr "오류"
 
 #. module: account_edi
+#: model_terms:ir.ui.view,arch_db:account_edi.view_move_form_inherit
+msgid "Force Cancel"
+msgstr "강제 취소"
+
+#. module: account_edi
 #: model:ir.model.fields,field_description:account_edi.field_account_edi_document__edi_format_name
 msgid "Format Name"
 msgstr "양식 명"
@@ -255,7 +258,6 @@ msgstr "양식 명"
 #. module: account_edi
 #: model:ir.model.fields,help:account_edi.field_account_bank_statement_line__edi_error_count
 #: model:ir.model.fields,help:account_edi.field_account_move__edi_error_count
-#: model:ir.model.fields,help:account_edi.field_account_payment__edi_error_count
 msgid "How many EDIs are in error for this move?"
 msgstr "해당 작업에서 몇 개의 EDI에 오류가 발생했나요?"
 
@@ -274,7 +276,6 @@ msgstr "정보"
 #. module: account_edi
 #. odoo-python
 #: code:addons/account_edi/models/account_move.py:0
-#, python-format
 msgid ""
 "Invalid invoice configuration:\n"
 "\n"
@@ -328,6 +329,11 @@ msgid "Process now"
 msgstr "지금 진행하기"
 
 #. module: account_edi
+#: model:ir.model,name:account_edi.model_account_resequence_wizard
+msgid "Remake the sequence of Journal Entries."
+msgstr "전표입력 순서를 다시 조정합니다."
+
+#. module: account_edi
 #: model:ir.model,name:account_edi.model_ir_actions_report
 msgid "Report Action"
 msgstr "보고서 작업"
@@ -361,7 +367,6 @@ msgstr "시/도"
 #. module: account_edi
 #: model:ir.model.fields,help:account_edi.field_account_bank_statement_line__edi_state
 #: model:ir.model.fields,help:account_edi.field_account_move__edi_state
-#: model:ir.model.fields,help:account_edi.field_account_payment__edi_state
 msgid "The aggregated state of all the EDIs with web-service of this move"
 msgstr "이 작업에서 웹서비스를 제공하는 전체 EDI의 집계 상태"
 
@@ -373,8 +378,8 @@ msgid ""
 msgstr "청구서 발행 (및 해당 문서 처리) 시 edi_format_id에서 파일이 생성됩니다."
 
 #. module: account_edi
+#. odoo-python
 #: code:addons/account_edi/wizard/account_resequence.py:0
-#, python-format
 msgid ""
 "The following documents have already been sent and cannot be resequenced: %s"
 msgstr "다음 문서가 이미 전송되었으므로 다시 전송할 수 없습니다: %s"
@@ -399,9 +404,16 @@ msgstr "이미 존재하는 코드입니다."
 #. module: account_edi
 #. odoo-python
 #: code:addons/account_edi/models/account_edi_document.py:0
-#, python-format
 msgid "This document is being sent by another process already. "
 msgstr "다른 프로세스에서 이미 전송이 완료된 문서입니다."
+
+#. module: account_edi
+#. odoo-python
+#: code:addons/account_edi/models/account_move.py:0
+msgid ""
+"This invoice was canceled while the EDIs %s still had a pending cancellation"
+" request."
+msgstr "이 청구서는 EDI %s에 아직 취소 요청이 보류 중인 상태에서 취소되었습니다."
 
 #. module: account_edi
 #: model:ir.model.fields.selection,name:account_edi.selection__account_edi_document__state__to_cancel
@@ -424,7 +436,6 @@ msgstr "주의 사항"
 #. module: account_edi
 #. odoo-python
 #: code:addons/account_edi/models/account_move.py:0
-#, python-format
 msgid ""
 "You can't edit the following journal entry %s because an electronic document"
 " has already been sent. Please use the 'Request EDI Cancellation' button "
@@ -435,7 +446,6 @@ msgstr ""
 #. module: account_edi
 #. odoo-python
 #: code:addons/account_edi/models/ir_attachment.py:0
-#, python-format
 msgid ""
 "You can't unlink an attachment being an EDI document sent to the government."
 msgstr "EDI 문서가 정부 기관에 전송된 경우에는 첨부된 파일의 연결을 해제할 수 없습니다."

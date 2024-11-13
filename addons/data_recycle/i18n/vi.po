@@ -3,16 +3,15 @@
 # 	* data_recycle
 # 
 # Translators:
-# Wil Odoo, 2023
-# Thi Huong Nguyen, 2023
+# Wil Odoo, 2024
 # 
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0\n"
+"Project-Id-Version: Odoo Server 18.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 21:55+0000\n"
-"PO-Revision-Date: 2023-10-26 23:09+0000\n"
-"Last-Translator: Thi Huong Nguyen, 2023\n"
+"POT-Creation-Date: 2024-09-25 08:39+0000\n"
+"PO-Revision-Date: 2024-09-25 09:41+0000\n"
+"Last-Translator: Wil Odoo, 2024\n"
 "Language-Team: Vietnamese (https://app.transifex.com/odoo/teams/41243/vi/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -32,9 +31,8 @@ msgstr ""
 #. module: data_recycle
 #. odoo-python
 #: code:addons/data_recycle/models/data_recycle_record.py:0
-#, python-format
 msgid "**Record Deleted**"
-msgstr "**Tập dữ liệu đã bị xoá**"
+msgstr "**Bản ghi đã bị xoá**"
 
 #. module: data_recycle
 #: model_terms:ir.ui.view,arch_db:data_recycle.view_data_merge_model_form
@@ -71,7 +69,7 @@ msgstr "Cấu hình"
 #: model_terms:ir.actions.act_window,help:data_recycle.action_data_recycle_record
 #: model_terms:ir.actions.act_window,help:data_recycle.action_data_recycle_record_notification
 msgid "Configure rules to identify records to clean"
-msgstr "Configure rules to identify records to clean"
+msgstr "Cấu hình quy tắc để xác định bản ghi cần dọn dẹp"
 
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__create_uid
@@ -93,12 +91,11 @@ msgstr "Làm sạch Dữ liệu"
 #. module: data_recycle
 #: model:ir.actions.server,name:data_recycle.ir_cron_clean_records_ir_actions_server
 msgid "Data Recycle: Clean Records"
-msgstr "Tái chế dữ liệu: Dọn dẹp tập dữ liệu"
+msgstr "Tái chế dữ liệu: Dọn dẹp bản ghi"
 
 #. module: data_recycle
 #. odoo-python
 #: code:addons/data_recycle/models/data_recycle_model.py:0
-#, python-format
 msgid "Data to Recycle"
 msgstr "Dữ liệu cần tái chế"
 
@@ -131,7 +128,7 @@ msgstr "Huỷ bỏ"
 #. module: data_recycle
 #: model_terms:ir.ui.view,arch_db:data_recycle.view_data_recycle_record_search
 msgid "Discarded"
-msgstr "Discarded"
+msgstr "Đã huỷ bỏ"
 
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__display_name
@@ -164,7 +161,7 @@ msgstr "Bao gồm dữ liệu đã lưu trữ"
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__last_notification
 msgid "Last Notification"
-msgstr "Last Notification"
+msgstr "Thông báo cuối cùng"
 
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__write_uid
@@ -181,7 +178,7 @@ msgstr "Cập nhật lần cuối vào"
 #. module: data_recycle
 #: model:ir.model.fields,help:data_recycle.field_data_recycle_model__notify_user_ids
 msgid "List of users to notify when there are new records to recycle"
-msgstr "Danh sách người dùng cần thông báo khi có tập dữ liệu mới cần tái chế"
+msgstr "Danh sách người dùng cần thông báo khi có bản ghi mới cần tái chế"
 
 #. module: data_recycle
 #: model:ir.model.fields.selection,name:data_recycle.selection__data_recycle_model__recycle_mode__manual
@@ -215,32 +212,32 @@ msgstr "Tên"
 #: model_terms:ir.actions.act_window,help:data_recycle.action_data_recycle_record
 #: model_terms:ir.actions.act_window,help:data_recycle.action_data_recycle_record_notification
 msgid "No cleaning suggestions"
-msgstr "No cleaning suggestions"
+msgstr "Không có đề xuất dọn dẹp nào"
 
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__notify_frequency
 msgid "Notify"
-msgstr "Notify"
+msgstr "Thông báo"
 
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__notify_frequency_period
 msgid "Notify Frequency Period"
-msgstr "Notify Frequency Period"
+msgstr "Tần suất thông báo"
 
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__notify_user_ids
 msgid "Notify Users"
-msgstr "Notify Users"
+msgstr "Thông báo cho người dùng"
 
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_record__res_id
 msgid "Record ID"
-msgstr "ID tập dữ liệu"
+msgstr "ID bản ghi"
 
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_record__name
 msgid "Record Name"
-msgstr "Record Name"
+msgstr "Tên bản ghi"
 
 #. module: data_recycle
 #: model_terms:ir.ui.view,arch_db:data_recycle.view_data_merge_model_form
@@ -251,12 +248,12 @@ msgstr "Bản ghi"
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__records_to_recycle_count
 msgid "Records To Recycle"
-msgstr "Tập dữ liệu cần tái chế"
+msgstr "Bản ghi cần tái chế"
 
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__recycle_action
 msgid "Recycle Action"
-msgstr "Hành động tái chế"
+msgstr "Tác vụ tái chế"
 
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__recycle_mode
@@ -271,13 +268,13 @@ msgstr "Mô hình tái chế"
 #. module: data_recycle
 #: model:ir.model.fields,field_description:data_recycle.field_data_recycle_model__recycle_record_ids
 msgid "Recycle Record"
-msgstr "Tái chế tập dữ liệu"
+msgstr "Tái chế bản ghi"
 
 #. module: data_recycle
 #: model:ir.ui.menu,name:data_recycle.menu_data_cleaning_config_rules_recycle
 #: model:ir.ui.menu,name:data_recycle.menu_data_recycle_record
 msgid "Recycle Records"
-msgstr "Tái chế tập dữ liệu"
+msgstr "Tái chế bản ghi"
 
 #. module: data_recycle
 #: model_terms:ir.ui.view,arch_db:data_recycle.view_data_recycle_record_list
@@ -297,7 +294,7 @@ msgstr "Mô hình tái chế"
 #. module: data_recycle
 #: model:ir.model,name:data_recycle.model_data_recycle_record
 msgid "Recycling Record"
-msgstr "Tái chế tập dữ liệu"
+msgstr "Tái chế bản ghi"
 
 #. module: data_recycle
 #: model:ir.actions.act_window,name:data_recycle.action_data_recycle_config
@@ -317,17 +314,16 @@ msgstr "Chạy ngay"
 #. module: data_recycle
 #: model_terms:ir.ui.view,arch_db:data_recycle.view_data_merge_model_form
 msgid "Select a model to configure recycling actions"
-msgstr "Chọn một mô hình để cấu hình hành động tái chế"
+msgstr "Chọn một mô hình để cấu hình tác vụ tái chế"
 
 #. module: data_recycle
 #: model:ir.model.constraint,message:data_recycle.constraint_data_recycle_model_check_notif_freq
 msgid "The notification frequency should be greater than 0"
-msgstr "The notification frequency should be greater than 0"
+msgstr "Tần suất thông báo phải lớn hơn 0"
 
 #. module: data_recycle
 #. odoo-python
 #: code:addons/data_recycle/models/data_recycle_model.py:0
-#, python-format
 msgid "This model doesn't manage archived records. Only deletion is possible."
 msgstr "Mô hình này không quản lý hồ sơ lưu trữ. Chỉ có thể xóa."
 
@@ -339,22 +335,19 @@ msgstr "Trường thời gian"
 #. module: data_recycle
 #. odoo-python
 #: code:addons/data_recycle/models/data_recycle_record.py:0
-#, python-format
 msgid "Undefined Name"
 msgstr "Tên không xác định"
 
 #. module: data_recycle
 #. odoo-javascript
 #: code:addons/data_recycle/static/src/views/data_recycle_list_view.xml:0
-#, python-format
 msgid "Unselect"
-msgstr "Unselect"
+msgstr "Bỏ chọn"
 
 #. module: data_recycle
 #. odoo-javascript
 #: code:addons/data_recycle/static/src/views/data_recycle_list_view.xml:0
 #: model_terms:ir.ui.view,arch_db:data_recycle.view_data_recycle_record_list
-#, python-format
 msgid "Validate"
 msgstr "Xác nhận"
 
@@ -382,4 +375,4 @@ msgstr "ở đây"
 #. module: data_recycle
 #: model_terms:ir.ui.view,arch_db:data_recycle.notification
 msgid "records to clean with the '"
-msgstr "records to clean with the '"
+msgstr "bản ghi cần dọn dẹp với '"

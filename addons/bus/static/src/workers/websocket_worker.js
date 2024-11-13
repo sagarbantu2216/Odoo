@@ -1,11 +1,11 @@
 /** @odoo-module **/
 
-import { debounce } from "@bus/workers/websocket_worker_utils";
+import { debounce, Deferred } from "@bus/workers/websocket_worker_utils";
 
 /**
  * Type of events that can be sent from the worker to its clients.
  *
- * @typedef { 'connect' | 'reconnect' | 'disconnect' | 'reconnecting' | 'notification' | 'initialized' } WorkerEvent
+ * @typedef { 'connect' | 'reconnect' | 'disconnect' | 'reconnecting' | 'notification' | 'initialized' | 'outdated'|'update_state' | 'log_debug' } WorkerEvent
  */
 
 /**
@@ -32,9 +32,12 @@ export const WEBSOCKET_CLOSE_CODES = Object.freeze({
     KEEP_ALIVE_TIMEOUT: 4002,
     RECONNECTING: 4003,
 });
-// Should be incremented on every worker update in order to force
-// update of the worker in browser cache.
-export const WORKER_VERSION = "1.0.7";
+export const WORKER_STATE = Object.freeze({
+    CONNECTED: "CONNECTED",
+    DISCONNECTED: "DISCONNECTED",
+    IDLE: "IDLE",
+    CONNECTING: "CONNECTING",
+});
 const MAXIMUM_RECONNECT_DELAY = 60000;
 
 /**
@@ -60,12 +63,16 @@ export class WebsocketWorker {
         this.connectTimeout = null;
         this.debugModeByClient = new Map();
         this.isDebug = false;
+        this.active = true;
+        this.state = WORKER_STATE.IDLE;
         this.isReconnecting = false;
         this.lastChannelSubscription = null;
+        this.firstSubscribeDeferred = new Deferred();
         this.lastNotificationId = 0;
         this.messageWaitQueue = [];
         this._forceUpdateChannels = debounce(this._forceUpdateChannels, 300);
-        this._updateChannels = debounce(this._updateChannels, 0);
+        this._debouncedUpdateChannels = debounce(this._updateChannels, 300);
+        this._debouncedSendToServer = debounce(this._sendToServer, 300);
 
         this._onWebsocketClose = this._onWebsocketClose.bind(this);
         this._onWebsocketError = this._onWebsocketError.bind(this);
@@ -86,8 +93,9 @@ export class WebsocketWorker {
      * @param {Object} data
      */
     broadcast(type, data) {
+        this._logDebug("broadcast", type, data);
         for (const client of this.channelsByClient.keys()) {
-            client.postMessage({ type, data });
+            client.postMessage({ type, data: data ? JSON.parse(JSON.stringify(data)) : undefined });
         }
     }
 
@@ -111,7 +119,8 @@ export class WebsocketWorker {
      * @param {Object} data
      */
     sendToClient(client, type, data) {
-        client.postMessage({ type, data });
+        this._logDebug("sendToClient", type, data);
+        client.postMessage({ type, data: data ? JSON.parse(JSON.stringify(data)) : undefined });
     }
 
     //--------------------------------------------------------------------------
@@ -130,9 +139,16 @@ export class WebsocketWorker {
      * action.
      */
     _onClientMessage(client, { action, data }) {
+        this._logDebug("_onClientMessage", action, data);
         switch (action) {
-            case "send":
-                return this._sendToServer(data);
+            case "send": {
+                if (data["event_name"] === "update_presence") {
+                    this._debouncedSendToServer(data);
+                } else {
+                    this._sendToServer(data);
+                }
+                return;
+            }
             case "start":
                 return this._start();
             case "stop":
@@ -162,7 +178,7 @@ export class WebsocketWorker {
         if (!clientChannels.includes(channel)) {
             clientChannels.push(channel);
             this.channelsByClient.set(client, clientChannels);
-            this._updateChannels();
+            this._debouncedUpdateChannels();
         }
     }
 
@@ -181,7 +197,7 @@ export class WebsocketWorker {
         const channelIndex = clientChannels.indexOf(channel);
         if (channelIndex !== -1) {
             clientChannels.splice(channelIndex, 1);
-            this._updateChannels();
+            this._debouncedUpdateChannels();
         }
     }
 
@@ -203,10 +219,8 @@ export class WebsocketWorker {
     _unregisterClient(client) {
         this.channelsByClient.delete(client);
         this.debugModeByClient.delete(client);
-        this.isDebug = Object.values(this.debugModeByClient).some(
-            (debugValue) => debugValue !== ""
-        );
-        this._updateChannels();
+        this.isDebug = [...this.debugModeByClient.values()].some(Boolean);
+        this._debouncedUpdateChannels();
     }
 
     /**
@@ -227,20 +241,17 @@ export class WebsocketWorker {
      */
     _initializeConnection(client, { db, debug, lastNotificationId, uid, websocketURL, startTs }) {
         if (this.newestStartTs && this.newestStartTs > startTs) {
-            this.debugModeByClient[client] = debug;
-            this.isDebug = Object.values(this.debugModeByClient).some(
-                (debugValue) => debugValue !== ""
-            );
+            this.debugModeByClient.set(client, debug);
+            this.isDebug = [...this.debugModeByClient.values()].some(Boolean);
             this.sendToClient(client, "initialized");
+            this.sendToClient(client, "update_state", this.state);
             return;
         }
         this.newestStartTs = startTs;
         this.websocketURL = websocketURL;
         this.lastNotificationId = lastNotificationId;
-        this.debugModeByClient[client] = debug;
-        this.isDebug = Object.values(this.debugModeByClient).some(
-            (debugValue) => debugValue !== ""
-        );
+        this.debugModeByClient.set(client, debug);
+        this.isDebug = [...this.debugModeByClient.values()].some(Boolean);
         const isCurrentUserKnown = uid !== undefined;
         if (this.isWaitingForNewUID && isCurrentUserKnown) {
             this.isWaitingForNewUID = false;
@@ -255,6 +266,10 @@ export class WebsocketWorker {
             this.channelsByClient.forEach((_, key) => this.channelsByClient.set(key, []));
         }
         this.sendToClient(client, "initialized");
+        this.sendToClient(client, "update_state", this.state);
+        if (!this.active) {
+            this.sendToClient(client, "outdated");
+        }
     }
 
     /**
@@ -299,15 +314,10 @@ export class WebsocketWorker {
      * closed.
      */
     _onWebsocketClose({ code, reason }) {
-        if (this.isDebug) {
-            console.debug(
-                `%c${new Date().toLocaleString()} - [onClose]`,
-                "color: #c6e; font-weight: bold;",
-                code,
-                reason
-            );
-        }
+        this._logDebug("_onWebsocketClose", code, reason);
+        this._updateState(WORKER_STATE.DISCONNECTED);
         this.lastChannelSubscription = null;
+        this.firstSubscribeDeferred = new Deferred();
         if (this.isReconnecting) {
             // Connection was not established but the close event was
             // triggered anyway. Let the onWebsocketError method handle
@@ -316,6 +326,11 @@ export class WebsocketWorker {
         }
         this.broadcast("disconnect", { code, reason });
         if (code === WEBSOCKET_CLOSE_CODES.CLEAN) {
+            if (reason === "OUTDATED_VERSION") {
+                console.warn("Worker deactivated due to an outdated version.");
+                this.active = false;
+                this.broadcast("outdated");
+            }
             // WebSocket was closed on purpose, do not try to reconnect.
             return;
         }
@@ -336,12 +351,7 @@ export class WebsocketWorker {
      * Triggered when a connection failed or failed to established.
      */
     _onWebsocketError() {
-        if (this.isDebug) {
-            console.debug(
-                `%c${new Date().toLocaleString()} - [onError]`,
-                "color: #c6e; font-weight: bold;"
-            );
-        }
+        this._logDebug("_onWebsocketError");
         this._retryConnectionWithDelay();
     }
 
@@ -352,15 +362,25 @@ export class WebsocketWorker {
      */
     _onWebsocketMessage(messageEv) {
         const notifications = JSON.parse(messageEv.data);
-        if (this.isDebug) {
-            console.debug(
-                `%c${new Date().toLocaleString()} - [onMessage]`,
-                "color: #c6e; font-weight: bold;",
-                notifications
-            );
-        }
+        this._logDebug("_onWebsocketMessage", notifications);
         this.lastNotificationId = notifications[notifications.length - 1].id;
         this.broadcast("notification", notifications);
+    }
+
+    _logDebug(title, ...args) {
+        const clientsInDebug = [...this.debugModeByClient.keys()].filter((client) =>
+            this.debugModeByClient.get(client)
+        );
+        for (const client of clientsInDebug) {
+            client.postMessage({
+                type: "log_debug",
+                data: [
+                    `%c${new Date().toLocaleString()} - [${title}]`,
+                    "color: #c6e; font-weight: bold;",
+                    ...args,
+                ],
+            });
+        }
     }
 
     /**
@@ -368,19 +388,17 @@ export class WebsocketWorker {
      * the connection to open.
      */
     _onWebsocketOpen() {
-        if (this.isDebug) {
-            console.debug(
-                `%c${new Date().toLocaleString()} - [onOpen]`,
-                "color: #c6e; font-weight: bold;"
-            );
-        }
-        this._updateChannels();
-        this.messageWaitQueue.forEach((msg) => this.websocket.send(msg));
-        this.messageWaitQueue = [];
+        this._logDebug("_onWebsocketOpen");
+        this._updateState(WORKER_STATE.CONNECTED);
         this.broadcast(this.isReconnecting ? "reconnect" : "connect");
+        this._debouncedUpdateChannels();
         this.connectRetryDelay = this.INITIAL_RECONNECT_DELAY;
         this.connectTimeout = null;
         this.isReconnecting = false;
+        this.firstSubscribeDeferred.then(() => {
+            this.messageWaitQueue.forEach((msg) => this.websocket.send(msg));
+            this.messageWaitQueue = [];
+        });
     }
 
     /**
@@ -391,6 +409,7 @@ export class WebsocketWorker {
         this.connectRetryDelay =
             Math.min(this.connectRetryDelay * 1.5, MAXIMUM_RECONNECT_DELAY) +
             this.RECONNECT_JITTER * Math.random();
+        this._logDebug("_retryConnectionWithDelay", this.connectRetryDelay);
         this.connectTimeout = setTimeout(this._start.bind(this), this.connectRetryDelay);
     }
 
@@ -402,11 +421,23 @@ export class WebsocketWorker {
      * @param {{event_name: string, data: any }} message Message to send to the server.
      */
     _sendToServer(message) {
+        this._logDebug("_sendToServer", message);
         const payload = JSON.stringify(message);
         if (!this._isWebsocketConnected()) {
-            this.messageWaitQueue.push(payload);
+            if (message["event_name"] === "subscribe") {
+                this.messageWaitQueue = this.messageWaitQueue.filter(
+                    (msg) => JSON.parse(msg).event_name !== "subscribe"
+                );
+                this.messageWaitQueue.unshift(payload);
+            } else {
+                this.messageWaitQueue.push(payload);
+            }
         } else {
-            this.websocket.send(payload);
+            if (message["event_name"] === "subscribe") {
+                this.websocket.send(payload);
+            } else {
+                this.firstSubscribeDeferred.then(() => this.websocket.send(payload));
+            }
         }
     }
 
@@ -414,7 +445,8 @@ export class WebsocketWorker {
      * Start the worker by opening a websocket connection.
      */
     _start() {
-        if (this._isWebsocketConnected() || this._isWebsocketConnecting()) {
+        this._logDebug("_start");
+        if (!this.active || this._isWebsocketConnected() || this._isWebsocketConnecting()) {
             return;
         }
         if (this.websocket) {
@@ -429,6 +461,7 @@ export class WebsocketWorker {
             this.lastChannelSubscription = null;
             this.broadcast("disconnect", { code: WEBSOCKET_CLOSE_CODES.ABNORMAL_CLOSURE });
         }
+        this._updateState(WORKER_STATE.CONNECTING);
         this.websocket = new WebSocket(this.websocketURL);
         this.websocket.addEventListener("open", this._onWebsocketOpen);
         this.websocket.addEventListener("error", this._onWebsocketError);
@@ -440,6 +473,7 @@ export class WebsocketWorker {
      * Stop the worker.
      */
     _stop() {
+        this._logDebug("_stop");
         clearTimeout(this.connectTimeout);
         this.connectRetryDelay = this.INITIAL_RECONNECT_DELAY;
         this.isReconnecting = false;
@@ -469,6 +503,16 @@ export class WebsocketWorker {
                 event_name: "subscribe",
                 data: { channels: allTabsChannels, last: this.lastNotificationId },
             });
+            this.firstSubscribeDeferred.resolve();
         }
+    }
+    /**
+     * Update the worker state and broadcast the new state to its clients.
+     *
+     * @param {WORKER_STATE[keyof WORKER_STATE]} newState
+     */
+    _updateState(newState) {
+        this.state = newState;
+        this.broadcast("update_state", newState);
     }
 }

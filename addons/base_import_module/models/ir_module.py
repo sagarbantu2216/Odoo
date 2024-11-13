@@ -5,9 +5,9 @@ import json
 import logging
 import lxml
 import os
+import pathlib
 import requests
 import sys
-import tempfile
 import zipfile
 from collections import defaultdict
 from io import BytesIO
@@ -15,6 +15,7 @@ from os.path import join as opj
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessDenied, AccessError, UserError
+from odoo.http import request
 from odoo.modules.module import adapt_version, MANIFEST_NAMES
 from odoo.osv.expression import is_leaf
 from odoo.release import major_version
@@ -61,6 +62,14 @@ class IrModule(models.Model):
                 module.icon_image = attachment.datas
 
     def _import_module(self, module, path, force=False, with_demo=False):
+        # Do not create a bridge module for these neutralizations.
+        # Do not involve specific website during import by resetting
+        # information used by website's get_current_website.
+        self = self.with_context(website_id=None)  # noqa: PLW0642
+        force_website_id = None
+        if request and request.session.get('force_website_id'):
+            force_website_id = request.session.pop('force_website_id')
+
         known_mods = self.search([])
         known_mods_names = {m.name: m for m in known_mods}
         installed_mods = [m.name for m in known_mods if m.state == 'installed']
@@ -79,6 +88,8 @@ class IrModule(models.Model):
         values = self.get_values_from_terp(terp)
         if 'version' in terp:
             values['latest_version'] = adapt_version(terp['version'])
+        if self.env.context.get('data_module'):
+            values['module_type'] = 'industries'
 
         unmet_dependencies = set(terp.get('depends', [])).difference(installed_mods)
 
@@ -100,6 +111,11 @@ class IrModule(models.Model):
             assert terp.get('installable', True), "Module not installable"
             mod = self.create(dict(name=module, state='installed', imported=True, **values))
             mode = 'init'
+
+        exclude_list = set()
+        base_dir = pathlib.Path(path)
+        for pattern in terp.get('cloc_exclude', []):
+            exclude_list.update(str(p.relative_to(base_dir)) for p in base_dir.glob(pattern) if p.is_file())
 
         kind_of_files = ['data', 'init_xml', 'update_xml']
         if with_demo:
@@ -123,6 +139,13 @@ class IrModule(models.Model):
                         convert_sql_import(self.env, fp)
                     elif ext == '.xml':
                         convert_xml_import(self.env, module, fp, idref, mode, noupdate)
+                        if filename in exclude_list:
+                            self.env['ir.model.data'].create([{
+                                'name': f"cloc_exclude_{key}",
+                                'model': self.env['ir.model.data']._xmlid_lookup(f"{module}.{key}")[0],
+                                'module': "__cloc_exclude__",
+                                'res_id': value,
+                            } for key, value in idref.items()])
 
         path_static = opj(path, 'static')
         IrAttachment = self.env['ir.attachment']
@@ -143,6 +166,10 @@ class IrModule(models.Model):
                         type='binary',
                         datas=data,
                     )
+                    # Do not create a bridge module for this check.
+                    if 'public' in IrAttachment._fields:
+                        # Static data is public and not website-specific.
+                        values['public'] = True
                     attachment = IrAttachment.sudo().search([('url', '=', url_path), ('type', '=', 'binary'), ('res_model', '=', 'ir.ui.view')])
                     if attachment:
                         attachment.write(values)
@@ -154,6 +181,13 @@ class IrModule(models.Model):
                             'module': module,
                             'res_id': attachment.id,
                         })
+                        if str(pathlib.Path(full_path).relative_to(base_dir)) in exclude_list:
+                            self.env['ir.model.data'].create({
+                                'name': f"cloc_exclude_attachment_{url_path}".replace('.', '_').replace(' ', '_'),
+                                'model': 'ir.attachment',
+                                'module': "__cloc_exclude__",
+                                'res_id': attachment.id,
+                            })
 
         IrAsset = self.env['ir.asset']
         assets_vals = []
@@ -194,8 +228,28 @@ class IrModule(models.Model):
             'res_id': asset.id,
         } for asset in created_assets])
 
+        self.env['ir.module.module']._load_module_terms(
+            [module],
+            [lang for lang, _name in self.env['res.lang'].get_installed()],
+            overwrite=True,
+            imported_module=True,
+        )
+
+        if ('knowledge.article' in self.env
+            and (article_record := self.env.ref(f"{module}.welcome_article", raise_if_not_found=False))
+            and article_record._name == 'knowledge.article'
+            and self.env.ref(f"{module}.welcome_article_body", raise_if_not_found=False)
+        ):
+            body = self.env['ir.qweb']._render(f"{module}.welcome_article_body", lang=self.env.user.lang)
+            article_record.write({'body': body})
+
         mod._update_from_terp(terp)
         _logger.info("Successfully imported module '%s'", module)
+
+        if force_website_id:
+            # Restore neutralized website_id.
+            request.session['force_website_id'] = force_website_id
+
         return True
 
     @api.model
@@ -241,7 +295,8 @@ class IrModule(models.Model):
                     mod_name = filename.split('/')[0]
                     is_data_file = filename in module_data_files[mod_name]
                     is_static = filename.startswith('%s/static' % mod_name)
-                    if is_data_file or is_static:
+                    is_translation = filename.startswith('%s/i18n' % mod_name) and filename.endswith('.po')
+                    if is_data_file or is_static or is_translation:
                         z.extract(file, module_dir)
 
                 dirs = [d for d in os.listdir(module_dir) if os.path.isdir(opj(module_dir, d))]
@@ -252,7 +307,6 @@ class IrModule(models.Model):
                         path = opj(module_dir, mod_name)
                         self.sudo()._import_module(mod_name, path, force=force, with_demo=with_demo)
                     except Exception as e:
-                        _logger.exception('Error while importing module')
                         raise UserError(_(
                             "Error while importing module '%(module)s'.\n\n %(error_message)s \n\n",
                             module=mod_name, error_message=exception_to_unicode(e),
@@ -410,11 +464,11 @@ class IrModule(models.Model):
         except requests.exceptions.HTTPError:
             raise UserError(_('The module %s cannot be downloaded') % module_name)
         except requests.exceptions.ConnectionError:
-            raise UserError(_('Connection to %s failed, the module %s cannot be downloaded.', APPS_URL, module_name))
+            raise UserError(_('Connection to %(url)s failed, the module %(module)s cannot be downloaded.', url=APPS_URL, module=module_name))
 
     @api.model
     def _get_missing_dependencies(self, zip_data):
-        modules, unavailable_modules = self._get_missing_dependencies_modules(zip_data)
+        _modules, unavailable_modules = self._get_missing_dependencies_modules(zip_data)
         description = ''
         if unavailable_modules:
             description = _(
@@ -428,10 +482,11 @@ class IrModule(models.Model):
                 "https://www.odoo.com/pricing-plan for more information.\n"
                 "If you need Website themes, it can be downloaded from https://github.com/odoo/design-themes.\n"
             )
-        elif modules:
-            description = _("The following modules will also be installed:\n")
-            for mod in modules:
-                description += "- " + mod.shortdesc + "\n"
+        else:
+            description = _(
+                "Load demo data to test the industry's features with sample records. "
+                "Do not load them if this is your production database.",
+            )
         return description, unavailable_modules
 
     def _get_missing_dependencies_modules(self, zip_data):

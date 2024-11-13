@@ -3,29 +3,25 @@
 # 	* im_livechat
 # 
 # Translators:
-# Martin Talts <martin.t@avalah.ee>, 2023
-# Maidu Targama <m.targama@gmail.com>, 2023
-# Eneli Õigus <enelioigus@gmail.com>, 2023
-# Piia Paurson <piia@avalah.ee>, 2023
-# Egon Raamat <egon@avalah.ee>, 2023
-# Patrick-Jordan Kiudorv, 2023
-# Martin Trigaux, 2023
-# Martin Aavastik <martin@avalah.ee>, 2023
-# JanaAvalah, 2023
-# Algo Kärp <algokarp@gmail.com>, 2023
-# Arma Gedonsky <armagedonsky@hot.ee>, 2023
-# Rivo Zängov <eraser@eraser.ee>, 2023
-# Leaanika Randmets, 2023
-# Triine Aavik <triine@avalah.ee>, 2023
-# Mihkel avalah, 2023
+# Katrin Kampura, 2024
+# Egon Raamat <egon@avalah.ee>, 2024
+# Rivo Zängov <eraser@eraser.ee>, 2024
+# Triine Aavik <triine@avalah.ee>, 2024
+# Martin Trigaux, 2024
+# JanaAvalah, 2024
+# Stevin Lilla, 2024
+# Arma Gedonsky <armagedonsky@hot.ee>, 2024
+# Leaanika Randmets, 2024
+# Eneli Õigus <enelioigus@gmail.com>, 2024
+# Siim Raasuke, 2024
 # Anna, 2024
 # 
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0\n"
+"Project-Id-Version: Odoo Server 18.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 21:55+0000\n"
-"PO-Revision-Date: 2023-10-26 23:09+0000\n"
+"POT-Creation-Date: 2024-09-25 08:39+0000\n"
+"PO-Revision-Date: 2024-09-25 09:41+0000\n"
 "Last-Translator: Anna, 2024\n"
 "Language-Team: Estonian (https://app.transifex.com/odoo/teams/41243/et/)\n"
 "MIME-Version: 1.0\n"
@@ -36,15 +32,7 @@ msgstr ""
 
 #. module: im_livechat
 #. odoo-python
-#: code:addons/im_livechat/models/chatbot_script.py:0
-#, python-format
-msgid " (copy)"
-msgstr " (koopia)"
-
-#. module: im_livechat
-#. odoo-python
 #: code:addons/im_livechat/models/chatbot_script_step.py:0
-#, python-format
 msgid "\"%s\" is not a valid email."
 msgstr "\"%s\" ei ole kehtiv e-posti aadress."
 
@@ -80,17 +68,13 @@ msgstr "% õnnest"
 
 #. module: im_livechat
 #. odoo-python
-#: code:addons/im_livechat/models/discuss_channel.py:0
-#, python-format
-msgid ""
-"%(new_line)sType %(bold_start)s:shortcut%(bold_end)s to insert a canned "
-"response in your message."
-msgstr ""
+#: code:addons/im_livechat/models/chatbot_script.py:0
+msgid "%s (copy)"
+msgstr "%s (koopia)"
 
 #. module: im_livechat
 #. odoo-python
 #: code:addons/im_livechat/models/chatbot_script_step.py:0
-#, python-format
 msgid "%s has joined"
 msgstr "%s liitus"
 
@@ -98,7 +82,6 @@ msgstr "%s liitus"
 #. odoo-python
 #: code:addons/im_livechat/models/chatbot_script.py:0
 #: code:addons/im_livechat/models/discuss_channel.py:0
-#, python-format
 msgid ""
 "'%(input_email)s' does not look like a valid email. Can you please try "
 "again?"
@@ -129,11 +112,6 @@ msgid "1 is Monday, 7 is Sunday"
 msgstr "1 on esmaspäev, 7 on pühapäev"
 
 #. module: im_livechat
-#: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_form
-msgid "<i class=\"fa fa-mail-reply me-2\" title=\"Reply\"/>"
-msgstr ""
-
-#. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_kanban
 msgid ""
 "<i class=\"fa fa-smile-o text-success\" title=\"Percentage of happy "
@@ -145,11 +123,16 @@ msgstr ""
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.chatbot_test_script_page
 msgid "<i class=\"oi oi-fw oi-arrow-right\"/>Back to edit mode"
-msgstr ""
+msgstr "<i class=\"oi oi-fw oi-arrow-right\"/>Tagasi redigeerimisrežiimi"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_form
 msgid "<i title=\"Remove operator\" class=\"fa fa-fw fa-lg fa-close\"/>"
+msgstr "<i title=\"Remove operator\" class=\"fa fa-fw fa-lg fa-close\"/>"
+
+#. module: im_livechat
+#: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_kanban
+msgid "<span class=\"fw-bold\">Country: </span>"
 msgstr ""
 
 #. module: im_livechat
@@ -233,19 +216,13 @@ msgstr "Administraator"
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/feedback_panel/transcript_sender.xml:0
-#, python-format
 msgid "An error occurred. Please try again."
-msgstr ""
+msgstr "Ilmnes viga. Palun proovi uuesti."
 
 #. module: im_livechat
 #: model:chatbot.script.step,message:im_livechat.chatbot_script_welcome_step_documentation_redirect
 msgid "And tadaaaa here you go! 🌟"
-msgstr ""
-
-#. module: im_livechat
-#: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_form
-msgid "Anonymous"
-msgstr "Anonüümne"
+msgstr "Juhuu, siin see on! 🌟"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_discuss_channel__anonymous_name
@@ -281,18 +258,13 @@ msgstr "Manuste arv"
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel__available_operator_ids
 msgid "Available Operator"
-msgstr ""
-
-#. module: im_livechat
-#: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_form
-msgid "Avatar"
-msgstr "Avatar"
+msgstr "Saadaval Operaator"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_discuss_channel__rating_avg
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel__rating_avg
 msgid "Average Rating"
-msgstr "Keskmine hinne"
+msgstr "Keskmine hinnang"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel__rating_avg_percentage
@@ -313,12 +285,12 @@ msgstr "Keskmine sõnum"
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_report_operator__rating
 msgid "Average rating"
-msgstr ""
+msgstr "Keskmine hinnang"
 
 #. module: im_livechat
 #: model:ir.model.fields,help:im_livechat.field_im_livechat_report_operator__rating
 msgid "Average rating given by the visitor"
-msgstr ""
+msgstr "Külastaja antud keskmine hinnang"
 
 #. module: im_livechat
 #: model:ir.model.fields,help:im_livechat.field_im_livechat_report_channel__time_to_answer
@@ -334,7 +306,7 @@ msgstr "Keskmine aeg esimese vastuse andmiseks külastajale"
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_search
 msgid "Bad Ratings"
-msgstr ""
+msgstr "Halvad hinnangud"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_chatbot_script__operator_partner_id
@@ -468,7 +440,7 @@ msgstr "Chatboti skripti samm"
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_chatbot_message__script_step_id
 msgid "Chatbot Step"
-msgstr ""
+msgstr "Chatboti samm"
 
 #. module: im_livechat
 #: model:ir.ui.menu,name:im_livechat.chatbot_config
@@ -484,7 +456,6 @@ msgstr "Sulge"
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/feedback_panel/feedback_panel.xml:0
-#, python-format
 msgid "Close conversation"
 msgstr "Sulge vestlus"
 
@@ -503,7 +474,7 @@ msgstr "Seaded"
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_kanban
 msgid "Configure Channel"
-msgstr ""
+msgstr "Seadista kanal"
 
 #. module: im_livechat
 #: model:ir.model,name:im_livechat.model_res_partner
@@ -519,14 +490,12 @@ msgstr "Vestlus"
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/chatbot/chatbot_service.js:0
-#, python-format
 msgid "Conversation ended..."
 msgstr "Vestlus lõppes..."
 
 #. module: im_livechat
 #. odoo-python
 #: code:addons/im_livechat/models/discuss_channel.py:0
-#, python-format
 msgid "Conversation with %s"
 msgstr "Vestlus koos %s"
 
@@ -545,6 +514,7 @@ msgstr ""
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_discuss_channel__country_id
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel_rule__country_ids
+#: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_kanban
 msgid "Country"
 msgstr "Riik"
 
@@ -576,7 +546,7 @@ msgstr "Looge kanal ja alustage vestlust, et täita oma ajalugu."
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel__create_uid
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel_rule__create_uid
 msgid "Created by"
-msgstr "Loodud (kelle poolt?)"
+msgstr "Loonud"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_chatbot_message__create_date
@@ -604,6 +574,11 @@ msgstr "Loomise kuupäev (tund)"
 #: model:ir.ui.menu,name:im_livechat.rating_rating_menu_livechat
 msgid "Customer Ratings"
 msgstr "Kliendi hinnangud"
+
+#. module: im_livechat
+#: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_kanban
+msgid "Date:"
+msgstr "Kuupäev:"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_report_channel__day_number
@@ -665,9 +640,8 @@ msgstr ""
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/feedback_panel/feedback_panel.xml:0
-#, python-format
 msgid "Did we correctly answer your question?"
-msgstr ""
+msgstr "Kas me vastasime sinu küsimusele õigesti?"
 
 #. module: im_livechat
 #: model:ir.model,name:im_livechat.model_digest_digest
@@ -676,8 +650,7 @@ msgstr "Kokkuvõte"
 
 #. module: im_livechat
 #. odoo-javascript
-#: code:addons/im_livechat/static/src/views/discuss_channel_list/discuss_channel_list_view_controller.js:0
-#, python-format
+#: code:addons/im_livechat/static/src/views/livechat_view_controller_mixin.js:0
 msgid "Discuss"
 msgstr "Sõnumid"
 
@@ -702,7 +675,6 @@ msgstr "Kuvatav nimi"
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/livechat_button.xml:0
-#, python-format
 msgid "Drag to Move"
 msgstr ""
 
@@ -721,12 +693,17 @@ msgstr ""
 #: model:ir.model.fields,help:im_livechat.field_im_livechat_report_channel__duration
 #: model:ir.model.fields,help:im_livechat.field_im_livechat_report_operator__duration
 msgid "Duration of the conversation (in seconds)"
-msgstr ""
+msgstr "Vestluse kestus (sekundites)"
 
 #. module: im_livechat
 #: model:ir.model.fields,help:im_livechat.field_discuss_channel__duration
 msgid "Duration of the session in hours"
-msgstr ""
+msgstr "Seansi kestus tundides"
+
+#. module: im_livechat
+#: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_kanban
+msgid "Duration:"
+msgstr "Kestus:"
 
 #. module: im_livechat
 #: model:ir.model.fields.selection,name:im_livechat.selection__chatbot_script_step__step_type__question_email
@@ -747,14 +724,18 @@ msgstr ""
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/feedback_panel/feedback_panel.xml:0
-#, python-format
 msgid "Explain your note"
 msgstr "Selgita oma märkust"
 
 #. module: im_livechat
+#: model:ir.model,name:im_livechat.model_ir_binary
+msgid "File streaming helper model for controllers"
+msgstr "Faili voogesituse abimudel kontrollerite jaoks"
+
+#. module: im_livechat
 #: model:ir.model.fields.selection,name:im_livechat.selection__chatbot_script__first_step_warning__first_step_invalid
 msgid "First Step Invalid"
-msgstr ""
+msgstr "Esimene samm mittesobilik"
 
 #. module: im_livechat
 #: model:ir.model.fields.selection,name:im_livechat.selection__chatbot_script__first_step_warning__first_step_operator
@@ -792,7 +773,7 @@ msgstr ""
 #. module: im_livechat
 #: model:ir.model.fields.selection,name:im_livechat.selection__chatbot_script_step__step_type__free_input_single
 msgid "Free Input"
-msgstr ""
+msgstr "Tasuta sisend"
 
 #. module: im_livechat
 #: model:ir.model.fields.selection,name:im_livechat.selection__chatbot_script_step__step_type__free_input_multi
@@ -809,7 +790,7 @@ msgstr ""
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_search
 msgid "Good Ratings"
-msgstr ""
+msgstr "Head hinnangud"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_search
@@ -832,7 +813,6 @@ msgstr ""
 #. odoo-python
 #: code:addons/im_livechat/models/im_livechat_channel.py:0
 #: model:im_livechat.channel,button_text:im_livechat.im_livechat_channel_data
-#, python-format
 msgid "Have a Question? Chat with us."
 msgstr "Tekkis küsimusi? Kirjuta meile."
 
@@ -844,7 +824,7 @@ msgstr "Päise taustapildi värv"
 #. module: im_livechat
 #: model:im_livechat.channel,default_message:im_livechat.im_livechat_channel_data
 msgid "Hello, how may I help you?"
-msgstr ""
+msgstr "Tere, kuidas saan sind aidata?"
 
 #. module: im_livechat
 #: model:ir.model.fields.selection,name:im_livechat.selection__im_livechat_channel_rule__action__hide_button
@@ -853,7 +833,6 @@ msgstr "Peida"
 
 #. module: im_livechat
 #: model:ir.actions.act_window,name:im_livechat.discuss_channel_action
-#: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_form
 #: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_tree
 msgid "History"
 msgstr "Ajalugu"
@@ -873,7 +852,6 @@ msgstr ""
 #. module: im_livechat
 #. odoo-python
 #: code:addons/im_livechat/models/im_livechat_channel.py:0
-#, python-format
 msgid "How may I help you?"
 msgstr "Kuidas saan teile abiks olla?"
 
@@ -923,7 +901,7 @@ msgstr "Kui kontrollitud, siis uued sõnumid nõuavad Teie tähelepanu."
 #: model:ir.model.fields,help:im_livechat.field_discuss_channel__message_has_error
 #: model:ir.model.fields,help:im_livechat.field_discuss_channel__message_has_sms_error
 msgid "If checked, some messages have a delivery error."
-msgstr "Kui valitud, on mõningate sõnumitel saatmiserror."
+msgstr "Kui valitud, on mõningate sõnumitel saatmiserror"
 
 #. module: im_livechat
 #: model:chatbot.script.step,message:im_livechat.chatbot_script_welcome_step_documentation_exit
@@ -967,11 +945,6 @@ msgid "Is Forward Operator Child"
 msgstr ""
 
 #. module: im_livechat
-#: model:ir.model.fields,field_description:im_livechat.field_res_users_settings__is_discuss_sidebar_category_livechat_open
-msgid "Is category livechat open"
-msgstr ""
-
-#. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_discuss_channel__livechat_active
 msgid "Is livechat ongoing?"
 msgstr "Kas online vestlus on käimas?"
@@ -985,6 +958,12 @@ msgstr "Kas külastaja on anonüümne?"
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_kanban
 msgid "Join"
 msgstr "Liitu"
+
+#. module: im_livechat
+#. odoo-javascript
+#: code:addons/im_livechat/static/src/core/web/livechat_channel_model_patch.js:0
+msgid "Join %s"
+msgstr ""
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_form
@@ -1010,7 +989,6 @@ msgstr "Kpi Livechat Response Value"
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/core/web/channel_invitation_patch.xml:0
 #: code:addons/im_livechat/static/src/core/web/channel_member_list_patch.xml:0
-#, python-format
 msgid "Lang"
 msgstr "Keel"
 
@@ -1046,6 +1024,12 @@ msgid "Leave"
 msgstr "Lahku"
 
 #. module: im_livechat
+#. odoo-javascript
+#: code:addons/im_livechat/static/src/core/web/livechat_channel_model_patch.js:0
+msgid "Leave %s"
+msgstr ""
+
+#. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_form
 msgid "Leave Channel"
 msgstr "Lahku kanalist"
@@ -1069,11 +1053,10 @@ msgstr "Onliine vestluse kanali otsing"
 
 #. module: im_livechat
 #. odoo-javascript
-#: code:addons/im_livechat/static/src/core/web/discuss_app_model_patch.js:0
-#: code:addons/im_livechat/static/src/core/web/messaging_menu_patch.js:0
-#: code:addons/im_livechat/static/src/core/web/thread_icon_patch.xml:0
+#: code:addons/im_livechat/static/src/core/public_web/discuss_app_model_patch.js:0
+#: code:addons/im_livechat/static/src/core/public_web/messaging_menu_patch.js:0
+#: code:addons/im_livechat/static/src/core/web/thread_icon_patch.js:0
 #: model_terms:ir.ui.view,arch_db:im_livechat.res_users_form_view
-#, python-format
 msgid "Livechat"
 msgstr "Otsevestlus"
 
@@ -1109,14 +1092,14 @@ msgid "Livechat Conversation"
 msgstr "Online vestlus"
 
 #. module: im_livechat
-#: model_terms:ir.ui.view,arch_db:im_livechat.qunit_embed_suite
+#: model_terms:ir.ui.view,arch_db:im_livechat.unit_embed_suite
 msgid "Livechat External Tests"
 msgstr ""
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_res_users__livechat_lang_ids
 msgid "Livechat Languages"
-msgstr ""
+msgstr "Otsevestluse keeled"
 
 #. module: im_livechat
 #: model:ir.model.constraint,message:im_livechat.constraint_discuss_channel_livechat_operator_id
@@ -1154,7 +1137,7 @@ msgstr "Online vestluse statistika"
 #: model:ir.model.fields,field_description:im_livechat.field_res_users__livechat_username
 #: model:ir.model.fields,field_description:im_livechat.field_res_users_settings__livechat_username
 msgid "Livechat Username"
-msgstr ""
+msgstr "Otsevestluse kasutajanimi"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_form
@@ -1164,7 +1147,7 @@ msgstr "Online vestlusaken"
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_res_users_settings__livechat_lang_ids
 msgid "Livechat languages"
-msgstr ""
+msgstr "Otsevestluse keeled"
 
 #. module: im_livechat
 #: model:ir.model.fields,help:im_livechat.field_discuss_channel__livechat_active
@@ -1174,7 +1157,7 @@ msgstr ""
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel_rule__sequence
 msgid "Matching order"
-msgstr ""
+msgstr "Sobitamis järjestus"
 
 #. module: im_livechat
 #: model:ir.model,name:im_livechat.model_mail_message
@@ -1196,12 +1179,12 @@ msgstr "Sõnum"
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_report_channel_view_graph
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_report_channel_view_pivot
 msgid "Messages per session"
-msgstr ""
+msgstr "Sõnumid seansi kohta"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_report_channel_view_search
 msgid "Missed sessions"
-msgstr ""
+msgstr "Puudutud sessioonid"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_search
@@ -1217,7 +1200,6 @@ msgstr "Nimi"
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/livechat_service.js:0
-#, python-format
 msgid "No available collaborator, please try again later."
 msgstr ""
 
@@ -1233,15 +1215,14 @@ msgstr "Andmed puuduvad!"
 
 #. module: im_livechat
 #. odoo-python
-#: code:addons/im_livechat/models/discuss_channel.py:0
-#, python-format
+#: code:addons/im_livechat/models/res_partner.py:0
 msgid "No history found"
 msgstr "Ajalugu ei leitud"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_form
 msgid "Notification text"
-msgstr ""
+msgstr "Teavitustekst"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_discuss_channel__message_needaction_counter
@@ -1297,13 +1278,13 @@ msgstr "Odoo"
 #: model_terms:ir.ui.view,arch_db:im_livechat.res_users_form_view
 #: model_terms:ir.ui.view,arch_db:im_livechat.res_users_form_view_simple_modif
 msgid "Online Chat Language"
-msgstr ""
+msgstr "Veebivestluse keel"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_form
 #: model_terms:ir.ui.view,arch_db:im_livechat.res_users_form_view_simple_modif
 msgid "Online Chat Name"
-msgstr ""
+msgstr "Veebivestluse nimi"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_chatbot_script_step__triggering_answer_ids
@@ -1395,14 +1376,12 @@ msgstr "Telefon"
 #. module: im_livechat
 #. odoo-python
 #: code:addons/im_livechat/models/chatbot_script_step.py:0
-#, python-format
 msgid "Please call me on: "
 msgstr "Helistage meile:"
 
 #. module: im_livechat
 #. odoo-python
 #: code:addons/im_livechat/models/chatbot_script_step.py:0
-#, python-format
 msgid "Please contact me on: "
 msgstr "Võtke ühendust:"
 
@@ -1426,8 +1405,8 @@ msgstr "Küsimus"
 #: code:addons/im_livechat/controllers/main.py:0
 #: model:ir.model,name:im_livechat.model_rating_rating
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_report_channel__rating
+#: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_kanban
 #: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_tree
-#, python-format
 msgid "Rating"
 msgstr "Hinnang"
 
@@ -1482,9 +1461,8 @@ msgstr ""
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/feedback_panel/transcript_sender.xml:0
-#, python-format
 msgid "Receive a copy of this conversation."
-msgstr ""
+msgstr "Koopia sellest vestlusest."
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_chatbot_script_answer__redirect_link
@@ -1503,11 +1481,6 @@ msgid "Related Mail Message"
 msgstr "Seotud meili sõnum"
 
 #. module: im_livechat
-#: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_form
-msgid "Replied to"
-msgstr ""
-
-#. module: im_livechat
 #: model:ir.ui.menu,name:im_livechat.menu_reporting_livechat
 msgid "Report"
 msgstr "Statistika"
@@ -1515,22 +1488,18 @@ msgstr "Statistika"
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/js/colors_reset_button/colors_reset_button.xml:0
-#: code:addons/im_livechat/static/src/js/colors_reset_button/colors_reset_button.xml:0
-#, python-format
 msgid "Reset to default colors"
 msgstr ""
 
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/thread_actions.js:0
-#, python-format
 msgid "Restart Conversation"
 msgstr "Taaskäivita vestlus"
 
 #. module: im_livechat
 #. odoo-python
 #: code:addons/im_livechat/models/discuss_channel.py:0
-#, python-format
 msgid "Restarting conversation..."
 msgstr "Taaskäivita vestlus..."
 
@@ -1553,21 +1522,19 @@ msgstr "Rahulolu hinnang"
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_form
 msgid "Save your Channel to get your configuration widget."
-msgstr ""
+msgstr "Salvesta oma kanal, et sul tekiks konfiguratsiooni vidin."
 
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/chatbot/chatbot_service.js:0
-#, python-format
 msgid "Say something"
 msgstr "Ütle midagi"
 
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/composer_patch.js:0
-#, python-format
 msgid "Say something..."
-msgstr ""
+msgstr "Ütle midagi . . ."
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.chatbot_script_view_form
@@ -1582,7 +1549,7 @@ msgstr "Skript (väline)"
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_chatbot_script_answer__script_step_id
 msgid "Script Step"
-msgstr ""
+msgstr "Skripti samm"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_chatbot_script__script_step_ids
@@ -1603,21 +1570,18 @@ msgstr "Otsingu aruanne"
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/core/web/channel_commands_patch.js:0
-#, python-format
 msgid "See 15 last visited pages"
 msgstr ""
 
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/chatbot/chatbot_service.js:0
-#, python-format
 msgid "Select an option above"
 msgstr "Vali valik ülevalt"
 
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/feedback_panel/feedback_panel.xml:0
-#, python-format
 msgid "Send"
 msgstr "Saada"
 
@@ -1632,29 +1596,29 @@ msgstr "Jada"
 #: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_search
 #: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_tree
 msgid "Session Date"
-msgstr ""
+msgstr "Seansi kuupäev"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_form
 msgid "Session Form"
-msgstr ""
+msgstr " Seansi vorm"
 
 #. module: im_livechat
 #: model:ir.actions.act_window,name:im_livechat.im_livechat_report_channel_action
 #: model:ir.actions.act_window,name:im_livechat.im_livechat_report_channel_time_to_answer_action
 #: model:ir.ui.menu,name:im_livechat.menu_reporting_livechat_channel
 msgid "Session Statistics"
-msgstr ""
+msgstr "Seansi statistika"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_report_channel__is_unrated
 msgid "Session not rated"
-msgstr ""
+msgstr "Seanss hindamata"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_report_channel__is_without_answer
 msgid "Session(s) without answer"
-msgstr ""
+msgstr "Vastuseta seanss(id)"
 
 #. module: im_livechat
 #: model:ir.actions.act_window,name:im_livechat.discuss_channel_action_from_livechat_channel
@@ -1667,7 +1631,7 @@ msgstr "Sessioonid"
 #. module: im_livechat
 #: model:ir.ui.menu,name:im_livechat.session_history
 msgid "Sessions History"
-msgstr ""
+msgstr "Seansi ajalugu"
 
 #. module: im_livechat
 #: model:ir.model.fields.selection,name:im_livechat.selection__im_livechat_channel_rule__action__display_button
@@ -1682,12 +1646,12 @@ msgstr ""
 #. module: im_livechat
 #: model:ir.model.fields.selection,name:im_livechat.selection__im_livechat_channel_rule__action__display_button_and_text
 msgid "Show with notification"
-msgstr ""
+msgstr "Näita teavitusega"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_chatbot_script__source_id
 msgid "Source"
-msgstr "Kandideerimise allikad"
+msgstr "Allikas"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_report_channel__start_date
@@ -1707,10 +1671,10 @@ msgstr "Sammutüüp"
 
 #. module: im_livechat
 #. odoo-javascript
+#: code:addons/im_livechat/static/src/core/web/composer_patch.js:0
 #: code:addons/im_livechat/static/src/core/web/composer_patch.xml:0
-#, python-format
 msgid "Tab to next livechat"
-msgstr ""
+msgstr "Liigu järgmise reaalajavestluse juurde"
 
 #. module: im_livechat
 #: model:ir.model.fields.selection,name:im_livechat.selection__chatbot_script_step__step_type__text
@@ -1720,7 +1684,7 @@ msgstr "Tekst"
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel__button_text
 msgid "Text of the Button"
-msgstr ""
+msgstr "Nupu tekst"
 
 #. module: im_livechat
 #: model:ir.model.fields,help:im_livechat.field_im_livechat_channel__input_placeholder
@@ -1730,12 +1694,11 @@ msgstr "Tekst, mida näidatakse kasutajaga vestluse algatamiseks."
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_form
 msgid "Text to display on the notification"
-msgstr ""
+msgstr "Teavitusel kuvatav tekst"
 
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/feedback_panel/feedback_panel.xml:0
-#, python-format
 msgid "Thank you for your feedback"
 msgstr ""
 
@@ -1747,9 +1710,8 @@ msgstr ""
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/feedback_panel/transcript_sender.xml:0
-#, python-format
 msgid "The conversation was sent."
-msgstr ""
+msgstr "Vestlus on saadetud. "
 
 #. module: im_livechat
 #: model:ir.model.fields,help:im_livechat.field_im_livechat_channel_rule__country_ids
@@ -1799,7 +1761,7 @@ msgstr "See kuu"
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_report_operator_view_search
 #: model_terms:ir.ui.view,arch_db:im_livechat.rating_rating_view_search_livechat
 msgid "This Week"
-msgstr "See nädal"
+msgstr "Sel nädalal"
 
 #. module: im_livechat
 #: model:ir.model.fields,help:im_livechat.field_im_livechat_channel__default_message
@@ -1818,13 +1780,13 @@ msgstr ""
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_report_operator__time_to_answer
 msgid "Time to answer"
-msgstr ""
+msgstr "Vastamisaeg"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_digest_digest__kpi_livechat_response
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_report_channel__time_to_answer
 msgid "Time to answer (sec)"
-msgstr ""
+msgstr "Vastamisaeg (sekundites)"
 
 #. module: im_livechat
 #: model:digest.tip,name:im_livechat.digest_tip_im_livechat_0
@@ -1845,12 +1807,12 @@ msgstr "Pealkirja värv"
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_report_channel_view_search
 msgid "Treated sessions"
-msgstr ""
+msgstr "Töödeldud seansid"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel_rule__regex_url
 msgid "URL Regex"
-msgstr ""
+msgstr "URL regex"
 
 #. module: im_livechat
 #: model:ir.model.fields,help:im_livechat.field_im_livechat_channel__web_page
@@ -1867,7 +1829,7 @@ msgstr "UUID"
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.discuss_channel_view_search
 msgid "Unrated"
-msgstr ""
+msgstr "Hindamata"
 
 #. module: im_livechat
 #: model_terms:digest.tip,tip_description:im_livechat.digest_tip_im_livechat_0
@@ -1891,7 +1853,7 @@ msgstr "Kasutaja"
 #: model:ir.model.fields,field_description:im_livechat.field_res_partner__user_livechat_username
 #: model:ir.model.fields,field_description:im_livechat.field_res_users__user_livechat_username
 msgid "User Livechat Username"
-msgstr ""
+msgstr "Kasutaja Livechati kasutajanimi"
 
 #. module: im_livechat
 #: model:ir.model,name:im_livechat.model_res_users_settings
@@ -1912,10 +1874,8 @@ msgstr ""
 #. odoo-javascript
 #. odoo-python
 #: code:addons/im_livechat/controllers/main.py:0
-#: code:addons/im_livechat/controllers/main.py:0
 #: code:addons/im_livechat/models/im_livechat_channel.py:0
 #: code:addons/im_livechat/static/src/embed/common/livechat_service.js:0
-#, python-format
 msgid "Visitor"
 msgstr "Külastaja"
 
@@ -1927,14 +1887,13 @@ msgstr "Külastaja on õnnelik"
 #. module: im_livechat
 #. odoo-python
 #: code:addons/im_livechat/models/discuss_channel.py:0
-#, python-format
 msgid "Visitor left the conversation."
-msgstr ""
+msgstr "Külastaja lahkus vestlusest."
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel__web_page
 msgid "Web Page"
-msgstr ""
+msgstr "Veebileht"
 
 #. module: im_livechat
 #: model:ir.actions.act_window,name:im_livechat.im_livechat_channel_action
@@ -1954,7 +1913,7 @@ msgstr "Veebilehe suhtluse ajalugu"
 #. module: im_livechat
 #: model:chatbot.script,title:im_livechat.chatbot_script_welcome_bot
 msgid "Welcome Bot"
-msgstr ""
+msgstr "Tervitav bot"
 
 #. module: im_livechat
 #: model:ir.model.fields,field_description:im_livechat.field_im_livechat_channel__default_message
@@ -1964,7 +1923,7 @@ msgstr "Tervitusteade"
 #. module: im_livechat
 #: model:chatbot.script.step,message:im_livechat.chatbot_script_welcome_step_welcome
 msgid "Welcome to CompanyName! 👋"
-msgstr ""
+msgstr "Tere tulemast CompanyName! 👋"
 
 #. module: im_livechat
 #: model:chatbot.script.step,message:im_livechat.chatbot_script_welcome_step_dispatch
@@ -1984,11 +1943,21 @@ msgstr ""
 "Kas jätaksite oma e-posti aadressi, et saaksime teiega ühendust võtta?"
 
 #. module: im_livechat
+#. odoo-javascript
+#: code:addons/im_livechat/static/src/embed/common/close_confirmation.xml:0
+msgid "Yes, leave conversation"
+msgstr ""
+
+#. module: im_livechat
+#: model_terms:ir.ui.view,arch_db:im_livechat.livechat_email_template
+msgid "You"
+msgstr "Teie"
+
+#. module: im_livechat
 #. odoo-python
 #: code:addons/im_livechat/controllers/attachment.py:0
-#, python-format
 msgid "You are not allowed to upload attachments on this channel."
-msgstr ""
+msgstr "Sul ei ole õigusi sellel kanalil manuseid üles laadida."
 
 #. module: im_livechat
 #: model_terms:ir.actions.act_window,help:im_livechat.chatbot_script_action
@@ -2006,6 +1975,24 @@ msgid ""
 msgstr ""
 
 #. module: im_livechat
+#. odoo-javascript
+#: code:addons/im_livechat/static/src/core/web/livechat_channel_model_patch.js:0
+msgid "You joined %s."
+msgstr ""
+
+#. module: im_livechat
+#. odoo-javascript
+#: code:addons/im_livechat/static/src/core/web/livechat_channel_model_patch.js:0
+msgid "You left %s."
+msgstr ""
+
+#. module: im_livechat
+#. odoo-javascript
+#: code:addons/im_livechat/static/src/embed/common/close_confirmation.xml:0
+msgid "You're about to leave the conversation, proceed?"
+msgstr ""
+
+#. module: im_livechat
 #: model_terms:ir.actions.act_window,help:im_livechat.discuss_channel_action
 msgid "Your chatter history is empty"
 msgstr ""
@@ -2013,14 +2000,13 @@ msgstr ""
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/core/web/channel_member_list_patch.xml:0
-#, python-format
 msgid "country"
-msgstr ""
+msgstr "riik"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.chatbot_script_view_form
 msgid "e.g. \"Meeting Scheduler Bot\""
-msgstr ""
+msgstr "nt \"Koosoleku planeerimise bot\""
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.chatbot_script_step_view_form
@@ -2045,7 +2031,6 @@ msgstr "nt SinuVeebileht.ee"
 #. module: im_livechat
 #. odoo-javascript
 #: code:addons/im_livechat/static/src/embed/common/feedback_panel/transcript_sender.xml:0
-#, python-format
 msgid "mail@example.com"
 msgstr "mail@example.com"
 
@@ -2053,11 +2038,12 @@ msgstr "mail@example.com"
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_view_form
 msgid "or copy this url and send it by email to your customers or suppliers:"
 msgstr ""
+"või kopeeris see url ja saada see emailiga oma klientidele või tarnijatele:"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.im_livechat_channel_rule_view_form
 msgid "seconds"
-msgstr "sekundit"
+msgstr "sekundid"
 
 #. module: im_livechat
 #: model_terms:ir.ui.view,arch_db:im_livechat.livechat_email_template

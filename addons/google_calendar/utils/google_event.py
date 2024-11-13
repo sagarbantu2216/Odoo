@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-
-from odoo.tools import email_normalize, ReadonlyDict
 import logging
-from typing import Iterator, Mapping
-from collections import abc
 import re
+from collections import abc
+from typing import Iterator, Mapping
+
+from odoo.tools import email_normalize
+from odoo.tools.misc import ReadonlyDict
 
 _logger = logging.getLogger(__name__)
 
@@ -65,8 +66,7 @@ class GoogleEvent(abc.Set):
     @property
     def rrule(self):
         if self.recurrence and any('RRULE' in item for item in self.recurrence):
-            rrule = next(item for item in self.recurrence if 'RRULE' in item)
-            return rrule[6:]  # skip "RRULE:" in the rrule string
+            return next(item for item in self.recurrence if 'RRULE' in item)
 
     def odoo_id(self, env):
         self.odoo_ids(env)  # load ids

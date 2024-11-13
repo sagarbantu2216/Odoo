@@ -117,6 +117,11 @@ class AccountEdiFormat(models.Model):
         access_data = self._l10n_eg_eta_get_access_token(invoice)
         if access_data.get('error'):
             return access_data
+        # Check current status. It may already be cancelled or rejected.
+        if invoice.l10n_eg_submission_number:
+            document_summary = self._l10n_eg_get_einvoice_document_summary(invoice)
+            if document_summary.get('doc_data') and document_summary['doc_data'][0].get('status') in ('Cancelled', 'Rejected'):
+                return {'success': True}
         request_url = f'/api/v1/documents/state/{url_quote(invoice.l10n_eg_uuid)}/state'
         request_data = {
             'body': json.dumps({'status': 'cancelled', 'reason': 'Cancelled'}),
@@ -133,7 +138,7 @@ class AccountEdiFormat(models.Model):
         }
 
     @api.model
-    def _l10n_eg_get_einvoice_status(self, invoice):
+    def _l10n_eg_get_einvoice_document_summary(self, invoice):
         access_data = self._l10n_eg_eta_get_access_token(invoice)
         if access_data.get('error'):
             return access_data
@@ -147,6 +152,11 @@ class AccountEdiFormat(models.Model):
             return response_data
         response_data = response_data.get('response').json()
         document_summary = [doc for doc in response_data.get('documentSummary', []) if doc.get('uuid') == invoice.l10n_eg_uuid]
+        return {'doc_data': document_summary}
+
+    @api.model
+    def _l10n_eg_get_einvoice_status(self, invoice):
+        document_summary = self._l10n_eg_get_einvoice_document_summary(invoice)
         return_dict = {
             'Invalid': {
                 'error': _("This invoice has been marked as invalid by the ETA. Please check the ETA website for more information"),
@@ -157,10 +167,10 @@ class AccountEdiFormat(models.Model):
                 'blocking_level': 'info'
             },
             'Valid': {'success': True},
-            'Cancelled': {'error': _('Document Canceled'), 'blocking_level': 'error'},
+            'Cancelled': {'error': _('Document Cancelled'), 'blocking_level': 'error'},
         }
-        if document_summary and return_dict.get(document_summary[0].get('status')):
-            return return_dict.get(document_summary[0]['status'])
+        if document_summary.get('doc_data') and return_dict.get(document_summary['doc_data'][0].get('status')):
+            return return_dict.get(document_summary['doc_data'][0]['status'])
         return {'error': _('an Unknown error has occured'), 'blocking_level': 'warning'}
 
     def _l10n_eg_eta_get_access_token(self, invoice):
@@ -203,14 +213,41 @@ class AccountEdiFormat(models.Model):
 
     @api.model
     def _l10n_eg_eta_prepare_eta_invoice(self, invoice):
+        AccountTax = self.env['account.tax']
+        base_amls = invoice.line_ids.filtered(lambda x: x.display_type == 'product')
+        base_lines = [invoice._prepare_product_base_line_for_taxes_computation(x) for x in base_amls]
+        tax_amls = invoice.line_ids.filtered(lambda x: x.display_type == 'tax')
+        tax_lines = [invoice._prepare_tax_line_for_taxes_computation(x) for x in tax_amls]
+        AccountTax._add_tax_details_in_base_lines(base_lines, invoice.company_id)
+        AccountTax._round_base_lines_tax_details(base_lines, invoice.company_id, tax_lines=tax_lines)
 
-        def group_tax_retention(base_line, tax_values):
-            tax = tax_values['tax_repartition_line'].tax_id
-            return {'l10n_eg_eta_code': tax.l10n_eg_eta_code.split('_')[0]}
+        # Tax amounts per line.
+
+        def grouping_function_base_line(base_line, tax_data):
+            tax = tax_data['tax']
+            code_split = tax.l10n_eg_eta_code.split('_')
+            return {
+                'rate': abs(tax.amount) if tax.amount_type != 'fixed' else None,
+                'tax_type': code_split[0].upper(),
+                'sub_type': code_split[1].upper(),
+            }
+
+        base_lines_aggregated_values = AccountTax._aggregate_base_lines_tax_details(base_lines, grouping_function_base_line)
+        invoice_line_data, totals = self._l10n_eg_eta_prepare_invoice_lines_data(invoice, base_lines_aggregated_values)
+
+        # Tax amounts for the whole document.
+
+        def grouping_function_global(base_line, tax_data):
+            tax = tax_data['tax']
+            code_split = tax.l10n_eg_eta_code.split('_')
+            return {
+                'tax_type': code_split[0].upper(),
+            }
+
+        base_lines_aggregated_values = AccountTax._aggregate_base_lines_tax_details(base_lines, grouping_function_global)
+        values_per_grouping_key = AccountTax._aggregate_base_lines_aggregated_values(base_lines_aggregated_values)
 
         date_string = invoice.invoice_date.strftime('%Y-%m-%dT%H:%M:%SZ')
-        grouped_taxes = invoice._prepare_edi_tax_details(grouping_key_generator=group_tax_retention)
-        invoice_line_data, totals = self._l10n_eg_eta_prepare_invoice_lines_data(invoice, grouped_taxes['tax_details_per_record'])
         eta_invoice = {
             'issuer': self._l10n_eg_eta_prepare_address_data(invoice.journal_id.l10n_eg_branch_id, invoice, issuer=True,),
             'receiver': self._l10n_eg_eta_prepare_address_data(invoice.partner_id, invoice),
@@ -222,14 +259,18 @@ class AccountEdiFormat(models.Model):
         }
         eta_invoice.update({
             'invoiceLines': invoice_line_data,
-            'taxTotals': [{
-                'taxType': tax['l10n_eg_eta_code'].split('_')[0].upper(),
-                'amount': self._l10n_eg_edi_round(abs(tax['tax_amount'])),
-            } for tax in grouped_taxes['tax_details'].values()],
+            'taxTotals': [
+                {
+                    'taxType': grouping_key['tax_type'],
+                    'amount': self._l10n_eg_edi_round(tax_values['tax_amount']),
+                }
+                for grouping_key, tax_values in values_per_grouping_key.items()
+                if grouping_key
+            ],
             'totalDiscountAmount': self._l10n_eg_edi_round(totals['discount_total']),
             'totalSalesAmount': self._l10n_eg_edi_round(totals['total_price_subtotal_before_discount']),
-            'netAmount': self._l10n_eg_edi_round(abs(invoice.amount_untaxed_signed)),
-            'totalAmount': self._l10n_eg_edi_round(abs(invoice.amount_total_signed)),
+            'netAmount': self._l10n_eg_edi_round(sum(x['base_amount'] for x in values_per_grouping_key.values())),
+            'totalAmount': self._l10n_eg_edi_round(sum(x['base_amount'] + x['tax_amount'] for x in values_per_grouping_key.values())),
             'extraDiscountAmount': 0.0,
             'totalItemsDiscountAmount': 0.0,
         })
@@ -240,20 +281,21 @@ class AccountEdiFormat(models.Model):
         return eta_invoice
 
     @api.model
-    def _l10n_eg_eta_prepare_invoice_lines_data(self, invoice, tax_data):
+    def _l10n_eg_eta_prepare_invoice_lines_data(self, invoice, base_lines_aggregated_values):
         lines = []
         totals = {
             'discount_total': 0.0,
             'total_price_subtotal_before_discount' : 0.0,
         }
-        for line in invoice.invoice_line_ids.filtered(lambda x: x.display_type not in ('line_note', 'line_section')):
-            line_tax_details = tax_data.get(line, {})
+        for base_line, aggregated_values in base_lines_aggregated_values:
+            line = base_line['record']
+            tax_details = base_line['tax_details']
             price_unit = self._l10n_eg_edi_round(abs((line.balance / line.quantity) / (1 - (line.discount / 100.0)))) if line.quantity and line.discount != 100.0 else line.price_unit
             price_subtotal_before_discount = self._l10n_eg_edi_round(abs(line.balance / (1 - (line.discount / 100)))) if line.discount != 100.0 else self._l10n_eg_edi_round(price_unit * line.quantity)
             discount_amount = self._l10n_eg_edi_round(price_subtotal_before_discount - abs(line.balance))
             item_code = line.product_id.l10n_eg_eta_code or line.product_id.barcode
             lines.append({
-                'description': line.name,
+                'description': line.product_id.display_name or line.name,
                 'itemType': item_code.startswith('EG') and 'EGS' or 'GS1',
                 'itemCode': item_code,
                 'unitType': line.product_uom_id.l10n_eg_unit_code_id.code,
@@ -272,16 +314,17 @@ class AccountEdiFormat(models.Model):
                 },
                 'taxableItems': [
                     {
-                        'taxType': tax['tax_repartition_line'].tax_id.l10n_eg_eta_code.split('_')[0].upper().upper(),
-                        'amount': self._l10n_eg_edi_round(abs(tax['tax_amount'])),
-                        'subType': tax['tax_repartition_line'].tax_id.l10n_eg_eta_code.split('_')[1].upper(),
-                        **({'rate': abs(tax['tax_repartition_line'].tax_id.amount)} if tax['tax_repartition_line'].tax_id.amount_type != 'fixed' else {}),
+                        'taxType': grouping_key['tax_type'],
+                        'amount': self._l10n_eg_edi_round(tax_values['tax_amount']),
+                        'subType': grouping_key['sub_type'],
+                        'rate': grouping_key['rate'],
                     }
-                for tax_details in line_tax_details.get('tax_details', {}).values() for tax in tax_details.get('group_tax_details')
+                    for grouping_key, tax_values in aggregated_values.items()
+                    if grouping_key
                 ],
                 'salesTotal': price_subtotal_before_discount,
-                'netTotal': self._l10n_eg_edi_round(abs(line.balance)),
-                'total': self._l10n_eg_edi_round(abs(line.balance) + line_tax_details.get('tax_amount', 0.0)),
+                'netTotal': self._l10n_eg_edi_round(tax_details['total_excluded'] + tax_details['delta_base_amount']),
+                'total': self._l10n_eg_edi_round(tax_details['total_included']),
             })
             totals['discount_total'] += discount_amount
             totals['total_price_subtotal_before_discount'] += price_subtotal_before_discount

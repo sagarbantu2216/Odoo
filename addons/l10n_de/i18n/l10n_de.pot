@@ -4,16 +4,23 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0\n"
+"Project-Id-Version: Odoo Server saas~17.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-22 14:43+0000\n"
-"PO-Revision-Date: 2024-02-22 14:43+0000\n"
+"POT-Creation-Date: 2024-02-25 14:42+0000\n"
+"PO-Revision-Date: 2024-02-25 14:42+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: l10n_de
+#. odoo-python
+#: code:addons/l10n_de/models/ir_attachment.py:0
+#, python-format
+msgid "%(attachment_name)s (detached by %(user)s on %(date)s)"
+msgstr ""
 
 #. module: l10n_de
 #: model:account.report.line,name:l10n_de.tax_report_de_tag_21
@@ -276,6 +283,19 @@ msgid "98. at other tax rates (line 27)"
 msgstr ""
 
 #. module: l10n_de
+#: model_terms:ir.ui.view,arch_db:l10n_de.view_account_secure_entries_wizard
+msgid ""
+"<i>By securing entries, you make them unchangeable.</i>\n"
+"                        <br/>\n"
+"                        <i>This is required by law to ensure complete and traceable bookkeeping in accordance with GoBD.</i>"
+msgstr ""
+
+#. module: l10n_de
+#: model:ir.model,name:l10n_de.model_account_account
+msgid "Account"
+msgstr ""
+
+#. module: l10n_de
 #: model:ir.model,name:l10n_de.model_account_chart_template
 msgid "Account Chart Template"
 msgstr ""
@@ -283,6 +303,11 @@ msgstr ""
 #. module: l10n_de
 #: model:account.report.line,name:l10n_de.tax_report_de_tag_01
 msgid "Assessment basis"
+msgstr ""
+
+#. module: l10n_de
+#: model:ir.model,name:l10n_de.model_ir_attachment
+msgid "Attachment"
 msgstr ""
 
 #. module: l10n_de
@@ -810,24 +835,26 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_de/models/account_account.py:0
 #, python-format
-msgid ""
-"You can not change the code/name of an account if it contains hashed "
-"entries."
+msgid "You can not change the code of an account."
 msgstr ""
 
-#. module: l10n_de_reports
-#: code:addons/l10n_de_reports/models/account_generic_tax_report.py:0
+#. module: l10n_de
+#. odoo-python
+#: code:addons/l10n_de/models/ir_attachment.py:0
+#, python-format
+msgid "You cannot remove parts of the audit trail."
+msgstr ""
+
+#. module: l10n_de
+#. odoo-python
+#: code:addons/l10n_de/models/res_company.py:0
 #, python-format
 msgid "Your company's SteuerNummer is not compatible with your state"
 msgstr ""
 
-#. module: l10n_de_reports
-#: code:addons/l10n_de_reports/models/account_generic_tax_report.py:0
+#. module: l10n_de
+#. odoo-python
+#: code:addons/l10n_de/models/res_company.py:0
 #, python-format
 msgid "Your company's SteuerNummer is not valid"
-msgstr ""
-
-#. module: l10n_de
-#: model:ir.model.fields,field_description:l10n_de.field_base_document_layout__zip
-msgid "Zip"
 msgstr ""

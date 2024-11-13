@@ -15,7 +15,7 @@ class EventController(Controller):
     def event_ics_file(self, event, **kwargs):
         lang = request.context.get('lang', request.env.user.lang)
         if request.env.user._is_public():
-            lang = request.httprequest.cookies.get('frontend_lang')
+            lang = request.cookies.get('frontend_lang')
         event = event.with_context(lang=lang)
         files = event._get_ics_file()
         if not event.id in files:
@@ -47,7 +47,7 @@ class EventController(Controller):
         # We sudo the event in case of invitations sent before publishing it.
         event_sudo = request.env['event.event'].browse(event_id).exists().sudo()
         hash_truth = event_sudo and event_sudo._get_tickets_access_hash(registration_ids)
-        if not consteq(tickets_hash, hash_truth):
+        if not hash_truth or not consteq(tickets_hash, hash_truth):
             raise NotFound()
 
         event_registrations_sudo = event_sudo.registration_ids.filtered(lambda reg: reg.id in registration_ids)
@@ -89,7 +89,7 @@ class EventController(Controller):
             }
         else:
             return {
-                'name': _('Registration Desk'),
+                'name': _('Event Registrations'),
                 'country': False,
                 'city': False,
                 'company_name': request.env.company.name,

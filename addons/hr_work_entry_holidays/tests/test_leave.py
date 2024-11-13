@@ -160,7 +160,7 @@ class TestWorkEntryLeave(TestWorkEntryHolidaysBase):
     def test_work_entry_generation_company_time_off(self):
         existing_leaves = self.env['hr.leave'].search([])
         existing_leaves.action_refuse()
-        existing_leaves.action_draft()
+        existing_leaves.action_reset_confirm()
         existing_leaves.unlink()
         start = date(2022, 8, 1)
         end = date(2022, 8, 31)
@@ -171,15 +171,15 @@ class TestWorkEntryLeave(TestWorkEntryHolidaysBase):
             ('date_stop', '<=', end),
         ])
         self.assertEqual(len(work_entries.work_entry_type_id), 1)
-        leave = self.env['hr.leave'].create({
+        leave = self.env['hr.leave.generate.multi.wizard'].create({
             'name': 'Holiday!!!',
-            'holiday_type': 'company',
-            'mode_company_id': self.env.company.id,
+            'allocation_mode': 'company',
+            'company_id': self.env.company.id,
             'holiday_status_id': self.leave_type.id,
-            'request_date_from': datetime(2022, 8, 8),
-            'request_date_to': datetime(2022, 8, 8),
+            'date_from': datetime(2022, 8, 8),
+            'date_to': datetime(2022, 8, 8),
         })
-        leave.action_validate()
+        leave.action_generate_time_off()
         work_entries = self.env['hr.work.entry'].search([
             ('employee_id', '=', self.jules_emp.id),
             ('date_start', '>=', start),
@@ -199,3 +199,52 @@ class TestWorkEntryLeave(TestWorkEntryHolidaysBase):
         self.assertTrue(leave.number_of_days, 1)
         contract.state = "open"
         self.assertTrue(leave.number_of_days, 1)
+
+    def test_split_leaves_by_entry_type(self):
+        entry_type_paid, entry_type_unpaid = self.env['hr.work.entry.type'].create([
+            {'name': 'Paid leave', 'code': 'PAID', 'is_leave': True},
+            {'name': 'Unpaid leave', 'code': 'UNPAID', 'is_leave': True},
+        ])
+
+        leave_type_paid, leave_type_unpaid = self.env['hr.leave.type'].create([{
+            'name': 'Paid leave type',
+            'requires_allocation': 'no',
+            'request_unit': 'hour',
+            'work_entry_type_id': entry_type_paid.id,
+        },
+        {
+            'name': 'Unpaid leave type',
+            'requires_allocation': 'no',
+            'request_unit': 'hour',
+            'work_entry_type_id': entry_type_unpaid.id,
+        }])
+
+        leave_paid, leave_unpaid = self.env['hr.leave'].create([{
+            'name': 'Paid leave',
+            'employee_id': self.jules_emp.id,
+            'holiday_status_id': leave_type_paid.id,
+            'request_date_from': datetime(2024, 9, 10),
+            'request_date_to': datetime(2024, 9, 10),
+            'request_unit_hours': True,
+            'request_hour_from': '8',
+            'request_hour_to': '9',
+        },
+        {
+            'name': 'Unpaid leave',
+            'employee_id': self.jules_emp.id,
+            'holiday_status_id': leave_type_unpaid.id,
+            'request_date_from': datetime(2024, 9, 10),
+            'request_date_to': datetime(2024, 9, 10),
+            'request_unit_hours': True,
+            'request_hour_from': '9',
+            'request_hour_to': '10',
+        }])
+
+        (leave_paid | leave_unpaid).with_user(SUPERUSER_ID).action_validate()
+        entries = self.contract_cdi._generate_work_entries(datetime(2024, 9, 10, 0, 0, 0), datetime(2024, 9, 10, 23, 59, 59))
+        paid_leave_entry = entries.filtered_domain([('work_entry_type_id', '=', entry_type_paid.id)])
+        unpaid_leave_entry = entries.filtered_domain([('work_entry_type_id', '=', entry_type_unpaid.id)])
+
+        self.assertEqual(len(entries), 4, 'Leaves should have 1 entry per type')
+        self.assertEqual((paid_leave_entry.date_stop - paid_leave_entry.date_start).seconds, 3600)
+        self.assertEqual((unpaid_leave_entry.date_stop - unpaid_leave_entry.date_start).seconds, 3600)

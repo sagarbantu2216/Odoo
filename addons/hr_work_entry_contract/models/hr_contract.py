@@ -11,8 +11,10 @@ from dateutil.relativedelta import relativedelta
 from odoo import api, fields, models, _
 from odoo.addons.resource.models.utils import string_to_datetime, Intervals
 from odoo.osv import expression
-from odoo.tools import ormcache
+from odoo.tools import ormcache, format_list
 from odoo.exceptions import UserError
+
+from .hr_work_intervals import WorkIntervals
 
 
 class HrContract(models.Model):
@@ -32,6 +34,12 @@ class HrContract(models.Model):
         Planning: Work entries will be generated from the employee's planning. (requires Planning app)
     '''
     )
+    work_entry_source_calendar_invalid = fields.Boolean(compute='_compute_work_entry_source_calendar_invalid')
+
+    @api.depends('work_entry_source', 'resource_calendar_id')
+    def _compute_work_entry_source_calendar_invalid(self):
+        for contract in self:
+            contract.work_entry_source_calendar_invalid = contract.work_entry_source == 'calendar' and not contract.resource_calendar_id
 
     @ormcache('self.structure_type_id')
     def _get_default_work_entry_type_id(self):
@@ -145,8 +153,8 @@ class HrContract(models.Model):
             employee = contract.employee_id
             calendar = contract.resource_calendar_id
             resource = employee.resource_id
-            tz = pytz.timezone(calendar.tz)
-
+            # if the contract is fully flexible, we refer to the employee's timezone
+            tz = pytz.timezone(resource.tz) if contract._is_fully_flexible() else pytz.timezone(calendar.tz)
             attendances = attendances_by_resource[resource.id]
 
             # Other calendars: In case the employee has declared time off in another calendar
@@ -177,7 +185,7 @@ class HrContract(models.Model):
                     leave_interval = contract._get_valid_leave_intervals(attendances, leave_interval)
                     if leave_interval:
                         result[resource.id] += leave_interval
-            mapped_leaves = {r.id: Intervals(result[r.id]) for r in resources_list}
+            mapped_leaves = {r.id: WorkIntervals(result[r.id]) for r in resources_list}
             leaves = mapped_leaves[resource.id]
 
             real_attendances = attendances - leaves
@@ -227,6 +235,7 @@ class HrContract(models.Model):
                     ('state', 'draft'),
                 ] + contract._get_more_vals_attendance_interval(interval))]
 
+            leaves_over_attendances = WorkIntervals(leaves) & real_leaves
             for interval in real_leaves:
                 # Could happen when a leave is configured on the interface on a day for which the
                 # employee is not supposed to work, i.e. no attendance_ids on the calendar.
@@ -234,20 +243,22 @@ class HrContract(models.Model):
                 # sql constraint error
                 if interval[0] == interval[1]:  # if start == stop
                     continue
-                leave_entry_type = contract._get_interval_leave_work_entry_type(interval, leaves, bypassing_work_entry_type_codes)
-                interval_leaves = [leave for leave in leaves if leave[2].work_entry_type_id.id == leave_entry_type.id]
-                interval_start = interval[0].astimezone(pytz.utc).replace(tzinfo=None)
-                interval_stop = interval[1].astimezone(pytz.utc).replace(tzinfo=None)
-                contract_vals += [dict([
-                    ('name', "%s%s" % (leave_entry_type.name + ": " if leave_entry_type else "", employee.name)),
-                    ('date_start', interval_start),
-                    ('date_stop', interval_stop),
-                    ('work_entry_type_id', leave_entry_type.id),
-                    ('employee_id', employee.id),
-                    ('company_id', contract.company_id.id),
-                    ('state', 'draft'),
-                    ('contract_id', contract.id),
-                ] + contract._get_more_vals_leave_interval(interval, interval_leaves))]
+                leaves_over_interval = [l for l in leaves_over_attendances if l[0] >= interval[0] and l[1] <= interval[1]]
+                for leave_interval in [(l[0], l[1], interval[2]) for l in leaves_over_interval]:
+                    leave_entry_type = contract._get_interval_leave_work_entry_type(leave_interval, leaves, bypassing_work_entry_type_codes)
+                    interval_leaves = [leave for leave in leaves if leave[2].work_entry_type_id.id == leave_entry_type.id]
+                    interval_start = leave_interval[0].astimezone(pytz.utc).replace(tzinfo=None)
+                    interval_stop = leave_interval[1].astimezone(pytz.utc).replace(tzinfo=None)
+                    contract_vals += [dict([
+                        ('name', "%s%s" % (leave_entry_type.name + ": " if leave_entry_type else "", employee.name)),
+                        ('date_start', interval_start),
+                        ('date_stop', interval_stop),
+                        ('work_entry_type_id', leave_entry_type.id),
+                        ('employee_id', employee.id),
+                        ('company_id', contract.company_id.id),
+                        ('state', 'draft'),
+                        ('contract_id', contract.id),
+                    ] + contract._get_more_vals_leave_interval(interval, interval_leaves))]
         return contract_vals
 
     def _get_work_entries_values(self, date_start, date_stop):
@@ -335,8 +346,9 @@ class HrContract(models.Model):
         canceled_contracts = self.filtered(lambda c: c.state == 'cancel')
         if canceled_contracts:
             raise UserError(
-                _("Sorry, generating work entries from cancelled contracts is not allowed.") + '\n%s' % (
-                    ', '.join(canceled_contracts.mapped('name'))))
+                _("Sorry, generating work entries from cancelled contracts is not allowed.")
+                + "\n%s" % (format_list(self.env, canceled_contracts.mapped("name"))),
+            )
         vals_list = []
         self.write({'last_generation_date': fields.Date.today()})
 
@@ -368,17 +380,14 @@ class HrContract(models.Model):
             # For each contract, we found each interval we must generate
             # In some cases we do not want to set the generated dates beforehand, since attendance based work entries
             #  is more dynamic, we want to update the dates within the _get_work_entries_values function
-            is_static_work_entries = contract.has_static_work_entries()
             last_generated_from = min(contract.date_generated_from, contract_stop)
             if last_generated_from > date_start_work_entries:
-                if is_static_work_entries:
-                    contract.date_generated_from = date_start_work_entries
+                contract.date_generated_from = date_start_work_entries
                 intervals_to_generate[(date_start_work_entries, last_generated_from)] |= contract
 
             last_generated_to = max(contract.date_generated_to, contract_start)
             if last_generated_to < date_stop_work_entries:
-                if is_static_work_entries:
-                    contract.date_generated_to = date_stop_work_entries
+                contract.date_generated_to = date_stop_work_entries
                 intervals_to_generate[(last_generated_to, date_stop_work_entries)] |= contract
 
         for interval, contracts in intervals_to_generate.items():

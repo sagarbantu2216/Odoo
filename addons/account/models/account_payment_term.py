@@ -96,7 +96,7 @@ class AccountPaymentTerm(models.Model):
                 discount_amount = record._get_amount_due_after_discount(record.example_amount, 0.0)
                 record.example_preview_discount = _(
                     "Early Payment Discount: <b>%(amount)s</b> if paid before <b>%(date)s</b>",
-                    amount=formatLang(self.env, discount_amount, monetary=True, currency_obj=currency),
+                    amount=formatLang(self.env, discount_amount, currency_obj=currency),
                     date=date,
                 )
 
@@ -117,7 +117,7 @@ class AccountPaymentTerm(models.Model):
                     example_preview += _(
                         "<b>%(count)s#</b> Installment of <b>%(amount)s</b> due on <b style='color: #704A66;'>%(date)s</b>",
                         count=i+1,
-                        amount=formatLang(self.env, amount, monetary=True, currency_obj=currency),
+                        amount=formatLang(self.env, amount, currency_obj=currency),
                         date=date,
                     )
                     example_preview += "</div>"
@@ -159,7 +159,7 @@ class AccountPaymentTerm(models.Model):
             if terms.early_discount and terms.discount_days <= 0:
                 raise ValidationError(_("The Early Payment Discount days must be strictly positive."))
 
-    def _compute_terms(self, date_ref, currency, company, tax_amount, tax_amount_currency, sign, untaxed_amount, untaxed_amount_currency):
+    def _compute_terms(self, date_ref, currency, company, tax_amount, tax_amount_currency, sign, untaxed_amount, untaxed_amount_currency, cash_rounding=None):
         """Get the distribution of this payment term.
         :param date_ref: The move date to take into account
         :param currency: the move's currency
@@ -169,6 +169,10 @@ class AccountPaymentTerm(models.Model):
         :param untaxed_amount: the signed untaxed amount for the move
         :param untaxed_amount_currency: the signed untaxed amount for the move in the move's currency
         :param sign: the sign of the move
+        :param cash_rounding: the cash rounding that should be applied (or None).
+            We assume that the input total in move currency (tax_amount_currency + untaxed_amount_currency) is already cash rounded.
+            The cash rounding does not change the totals: Consider the sum of all the computed payment term amounts in move / company currency.
+            It is the same as the input total in move / company currency.
         :return (list<tuple<datetime.date,tuple<float,float>>>): the amount in the company's currency and
             the document's currency, respectively for each required payment date
         """
@@ -176,6 +180,7 @@ class AccountPaymentTerm(models.Model):
         company_currency = company.currency_id
         total_amount = tax_amount + untaxed_amount
         total_amount_currency = tax_amount_currency + untaxed_amount_currency
+        rate = abs(total_amount_currency / total_amount) if total_amount else 0.0
 
         pay_term = {
             'total_amount': total_amount,
@@ -195,7 +200,12 @@ class AccountPaymentTerm(models.Model):
                 pay_term['discount_balance'] = company_currency.round(total_amount * (1 - discount_percentage))
                 pay_term['discount_amount_currency'] = currency.round(total_amount_currency * (1 - discount_percentage))
 
-        rate = abs(total_amount_currency / total_amount) if total_amount else 0.0
+            if cash_rounding:
+                cash_rounding_difference_currency = cash_rounding.compute_difference(currency, pay_term['discount_amount_currency'])
+                if not currency.is_zero(cash_rounding_difference_currency):
+                    pay_term['discount_amount_currency'] += cash_rounding_difference_currency
+                    pay_term['discount_balance'] = company_currency.round(pay_term['discount_amount_currency'] / rate) if rate else 0.0
+
         residual_amount = total_amount
         residual_amount_currency = total_amount_currency
 
@@ -206,8 +216,9 @@ class AccountPaymentTerm(models.Model):
                 'foreign_amount': 0,
             }
 
-            if i == len(self.line_ids) - 1:
-                # The last line is always the balance, no matter the type
+            # The last line is always the balance, no matter the type
+            on_balance_line = i == len(self.line_ids) - 1
+            if on_balance_line:
                 term_vals['company_amount'] = residual_amount
                 term_vals['foreign_amount'] = residual_amount_currency
             elif line.value == 'fixed':
@@ -221,6 +232,16 @@ class AccountPaymentTerm(models.Model):
                 term_vals['company_amount'] = line_amount
                 term_vals['foreign_amount'] = line_amount_currency
 
+            if cash_rounding and not on_balance_line:
+                # The value `residual_amount_currency` is always cash rounded (in case of cash rounding).
+                #   * We assume `total_amount_currency` is cash rounded.
+                #   * We only subtract cash rounded amounts.
+                # Thus the balance line is cash rounded.
+                cash_rounding_difference_currency = cash_rounding.compute_difference(currency, term_vals['foreign_amount'])
+                if not currency.is_zero(cash_rounding_difference_currency):
+                    term_vals['foreign_amount'] += cash_rounding_difference_currency
+                    term_vals['company_amount'] = company_currency.round(term_vals['foreign_amount'] / rate) if rate else 0.0
+
             residual_amount -= term_vals['company_amount']
             residual_amount_currency -= term_vals['foreign_amount']
             pay_term['line_ids'].append(term_vals)
@@ -229,15 +250,8 @@ class AccountPaymentTerm(models.Model):
 
     @api.ondelete(at_uninstall=False)
     def _unlink_except_referenced_terms(self):
-        if self.env['account.move'].search([('invoice_payment_term_id', 'in', self.ids)]):
+        if self.env['account.move'].search_count([('invoice_payment_term_id', 'in', self.ids)], limit=1):
             raise UserError(_('You can not delete payment terms as other records still reference it. However, you can archive it.'))
-
-    def unlink(self):
-        for terms in self:
-            self.env['ir.property'].sudo().search(
-                [('value_reference', 'in', ['account.payment.term,%s'%payment_term.id for payment_term in terms])]
-            ).unlink()
-        return super(AccountPaymentTerm, self).unlink()
 
     def _get_last_discount_date(self, date_ref):
         self.ensure_one()
@@ -266,7 +280,15 @@ class AccountPaymentTermLine(models.Model):
             ('days_after', 'Days after invoice date'),
             ('days_after_end_of_month', 'Days after end of month'),
             ('days_after_end_of_next_month', 'Days after end of next month'),
+            ('days_end_of_month_on_the', 'Days end of month on the'),
         ], required=True, default='days_after')
+    display_days_next_month = fields.Boolean(compute='_compute_display_days_next_month')
+    days_next_month = fields.Char(
+        string='Days on the next month',
+        readonly=False,
+        default='10',
+        size=2,
+    )
     nb_days = fields.Integer(string='Days', readonly=False, store=True, compute='_compute_days')
     payment_id = fields.Many2one('account.payment.term', string='Payment Terms', required=True, index=True, ondelete='cascade')
 
@@ -277,7 +299,31 @@ class AccountPaymentTermLine(models.Model):
             return date_utils.end_of(due_date, 'month') + relativedelta(days=self.nb_days)
         elif self.delay_type == 'days_after_end_of_next_month':
             return date_utils.end_of(due_date + relativedelta(months=1), 'month') + relativedelta(days=self.nb_days)
+        elif self.delay_type == 'days_end_of_month_on_the':
+            try:
+                days_next_month = int(self.days_next_month)
+            except ValueError:
+                days_next_month = 1
+
+            if not days_next_month:
+                return date_utils.end_of(due_date + relativedelta(days=self.nb_days), 'month')
+
+            return due_date + relativedelta(days=self.nb_days) + relativedelta(months=1, day=days_next_month)
         return due_date + relativedelta(days=self.nb_days)
+
+    @api.constrains('days_next_month')
+    def _check_valid_char_value(self):
+        for record in self:
+            if record.days_next_month and record.days_next_month.isnumeric():
+                if not (0 <= int(record.days_next_month) <= 31):
+                    raise ValidationError(_('The days added must be between 0 and 31.'))
+            else:
+                raise ValidationError(_('The days added must be a number and has to be between 0 and 31.'))
+
+    @api.depends('delay_type')
+    def _compute_display_days_next_month(self):
+        for record in self:
+            record.display_days_next_month = record.delay_type == 'days_end_of_month_on_the'
 
     @api.constrains('value', 'value_amount')
     def _check_percent(self):

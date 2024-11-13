@@ -3,15 +3,15 @@
 # 	* barcodes
 # 
 # Translators:
-# Wil Odoo, 2023
+# Wil Odoo, 2024
 # Larissa Manderfeld, 2024
 # 
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0\n"
+"Project-Id-Version: Odoo Server 18.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 21:55+0000\n"
-"PO-Revision-Date: 2023-10-26 23:09+0000\n"
+"POT-Creation-Date: 2024-09-25 08:40+0000\n"
+"PO-Revision-Date: 2024-09-25 09:41+0000\n"
 "Last-Translator: Larissa Manderfeld, 2024\n"
 "Language-Team: Spanish (https://app.transifex.com/odoo/teams/41243/es/)\n"
 "MIME-Version: 1.0\n"
@@ -23,11 +23,10 @@ msgstr ""
 #. module: barcodes
 #. odoo-python
 #: code:addons/barcodes/models/barcode_rule.py:0
-#, python-format
 msgid " '*' is not a valid Regex Barcode Pattern. Did you mean '.*'?"
 msgstr ""
-" '*' no es un patrón de código de barras Regex válido. ¿No habrá querido "
-"referirse a '.*'?"
+" '*' no es un patrón de código de barras válido para la expresión regular. "
+"¿Se refiere a'.*'?"
 
 #. module: barcodes
 #: model_terms:ir.ui.view,arch_db:barcodes.view_barcode_nomenclature_form
@@ -88,7 +87,6 @@ msgstr "Cualquiera"
 #. module: barcodes
 #. odoo-javascript
 #: code:addons/barcodes/static/src/components/barcode_scanner.xml:0
-#, python-format
 msgid "Barcode"
 msgstr "Código de barras"
 
@@ -130,9 +128,8 @@ msgstr "Código de barras escaneado"
 #. module: barcodes
 #. odoo-javascript
 #: code:addons/barcodes/static/src/barcode_handlers.js:0
-#, python-format
-msgid "Barcode: "
-msgstr "Código de barras:"
+msgid "Barcode: %(barcode)s"
+msgstr "Código de barras: %(barcode)s"
 
 #. module: barcodes
 #: model:ir.model,name:barcodes.model_res_company
@@ -230,7 +227,6 @@ msgstr ""
 #. module: barcodes
 #. odoo-javascript
 #: code:addons/barcodes/static/src/components/barcode_scanner.js:0
-#, python-format
 msgid "Please, Scan again!"
 msgstr "¡Escanee de nuevo!"
 
@@ -252,14 +248,13 @@ msgstr "Secuencia"
 #. module: barcodes
 #: model_terms:ir.ui.view,arch_db:barcodes.view_barcode_nomenclature_form
 msgid "Tables"
-msgstr "Gráficas"
+msgstr "Tablas"
 
 #. module: barcodes
 #. odoo-javascript
 #: code:addons/barcodes/static/src/components/barcode_scanner.xml:0
-#, python-format
 msgid "Tap to scan"
-msgstr "Presione para escanear."
+msgstr "Presione para escanear"
 
 #. module: barcodes
 #: model:ir.model.fields,help:barcodes.field_barcode_rule__pattern
@@ -267,9 +262,18 @@ msgid "The barcode matching pattern"
 msgstr "Patrón de concordancia para el código de barras"
 
 #. module: barcodes
+#. odoo-python
+#: code:addons/barcodes/models/barcode_rule.py:0
+msgid ""
+"The barcode pattern %(pattern)s does not lead to a valid regular expression."
+msgstr ""
+"El patrón %(pattern)s del código de barras no lleva a una expresión regular "
+"válida."
+
+#. module: barcodes
 #: model:ir.model.fields,help:barcodes.field_barcode_nomenclature__rule_ids
 msgid "The list of barcode rules"
-msgstr "Lista de reglas de códigos de barras"
+msgstr "La lista de reglas de códigos de barras"
 
 #. module: barcodes
 #: model:ir.model.fields,help:barcodes.field_barcode_rule__alias
@@ -279,7 +283,6 @@ msgstr "El patrón de concordancia será un alias para este código de barras"
 #. module: barcodes
 #. odoo-python
 #: code:addons/barcodes/models/barcode_rule.py:0
-#, python-format
 msgid ""
 "There is a syntax error in the barcode pattern %(pattern)s: a rule can only "
 "contain one pair of braces."
@@ -290,7 +293,6 @@ msgstr ""
 #. module: barcodes
 #. odoo-python
 #: code:addons/barcodes/models/barcode_rule.py:0
-#, python-format
 msgid ""
 "There is a syntax error in the barcode pattern %(pattern)s: braces can only "
 "contain N's followed by D's."
@@ -301,7 +303,6 @@ msgstr ""
 #. module: barcodes
 #. odoo-python
 #: code:addons/barcodes/models/barcode_rule.py:0
-#, python-format
 msgid ""
 "There is a syntax error in the barcode pattern %(pattern)s: empty braces."
 msgstr ""
@@ -329,7 +330,7 @@ msgid ""
 "setting determines if a UPC/EAN barcode should be automatically converted in"
 " one way or another when trying to match a rule with the other encoding."
 msgstr ""
-"Los códigos UPC se pueden convertir a EAN prefijándolos con un cero. Este "
+"Los códigos UPC se pueden convertir en EAN prefijándolos con un cero. Este "
 "ajuste determina si un código de barras UPC/EAN debe ser convertido "
 "automáticamente en uno u otro sentido al buscar una coincidencia con la otra"
 " codificación."
@@ -357,7 +358,6 @@ msgstr "Producto unitario"
 #. module: barcodes
 #. odoo-javascript
 #: code:addons/barcodes/static/src/barcode_handlers.js:0
-#, python-format
 msgid "Unknown barcode command"
 msgstr "Comando de código de barras desconocido"
 

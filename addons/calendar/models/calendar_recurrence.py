@@ -3,6 +3,7 @@
 
 from datetime import datetime, time
 import pytz
+import re
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
@@ -395,6 +396,15 @@ class RecurrenceRule(models.Model):
         data = {}
         day_list = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 
+        # Skip X-named RRULE extensions
+        # TODO Remove patch when dateutils contains the fix
+        # HACK https://github.com/dateutil/dateutil/pull/1374
+        # Optional parameters starts with X- and they can be placed anywhere in the RRULE string.
+        # RRULE:FREQ=MONTHLY;INTERVAL=3;X-RELATIVE=1
+        # RRULE;X-EVOLUTION-ENDDATE=20200120:FREQ=WEEKLY;COUNT=3;BYDAY=MO
+        # X-EVOLUTION-ENDDATE=20200120:FREQ=WEEKLY;COUNT=3;BYDAY=MO
+        rule_str = re.sub(r';?X-[-\w]+=[^;:]*', '', rule_str).replace(":;", ":").lstrip(":;")
+
         if 'Z' in rule_str and date_start and not date_start.tzinfo:
             date_start = pytz.utc.localize(date_start)
         rule = rrule.rrulestr(rule_str, dtstart=date_start)
@@ -419,14 +429,9 @@ class RecurrenceRule(models.Model):
             data['month_by'] = 'day'
             data['rrule_type'] = 'monthly'
 
-        if rule._bymonthday:
+        if rule._bymonthday and data['rrule_type'] == 'monthly':
             data['day'] = list(rule._bymonthday)[0]
             data['month_by'] = 'date'
-            data['rrule_type'] = 'monthly'
-
-        # Repeat yearly but for odoo it's monthly, take same information as monthly but interval is 12 times
-        if rule._bymonth:
-            data['interval'] *= 12
 
         if data.get('until'):
             data['end_type'] = 'end_date'
@@ -437,7 +442,7 @@ class RecurrenceRule(models.Model):
         return data
 
     def _get_lang_week_start(self):
-        lang = self.env['res.lang']._lang_get(self.env.user.lang)
+        lang = self.env['res.lang']._get_data(code=self.env.user.lang)
         week_start = int(lang.week_start)  # lang.week_start ranges from '1' to '7'
         return rrule.weekday(week_start - 1) # rrule expects an int from 0 to 6
 
