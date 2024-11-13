@@ -36,7 +36,12 @@ class ResourceCalendarLeaves(models.Model):
     company_id = fields.Many2one(
         'res.company', string="Company", readonly=True, store=True,
         default=lambda self: self.env.company, compute='_compute_company_id')
-    calendar_id = fields.Many2one('resource.calendar', 'Working Hours', domain="[('company_id', 'in', [company_id, False])]", check_company=True, index=True)
+    calendar_id = fields.Many2one(
+        'resource.calendar', "Working Hours",
+        compute='_compute_calendar_id', store=True, readonly=False,
+        domain="[('company_id', 'in', [company_id, False])]",
+        check_company=True, index=True,
+    )
     date_from = fields.Datetime('Start Date', required=True)
     date_to = fields.Datetime('End Date', compute="_compute_date_to", readonly=False, required=True, store=True)
     resource_id = fields.Many2one(
@@ -44,6 +49,11 @@ class ResourceCalendarLeaves(models.Model):
         help="If empty, this is a generic time off for the company. If a resource is set, the time off is only for this resource")
     time_type = fields.Selection([('leave', 'Time Off'), ('other', 'Other')], default='leave',
                                  help="Whether this should be computed as a time off or as work time (eg: formation)")
+
+    @api.depends('resource_id.calendar_id')
+    def _compute_calendar_id(self):
+        for leave in self.filtered('resource_id'):
+            leave.calendar_id = leave.resource_id.calendar_id
 
     @api.depends('calendar_id')
     def _compute_company_id(self):
@@ -54,20 +64,16 @@ class ResourceCalendarLeaves(models.Model):
     def _compute_date_to(self):
         user_tz = timezone(self.env.user.tz or self._context.get('tz') or self.company_id.resource_calendar_id.tz or 'UTC')
         for leave in self:
-            if not leave.date_from:
+            if not leave.date_from or (leave.date_to and leave.date_to > leave.date_from):
                 continue
-            date_to_tz = user_tz.localize(leave.date_from) + relativedelta(hour=23, minute=59, second=59)
-            leave.date_to = date_to_tz.astimezone(utc).replace(tzinfo=None)
+            local_date_from = utc.localize(leave.date_from).astimezone(user_tz)
+            local_date_to = local_date_from + relativedelta(hour=23, minute=59, second=59)
+            leave.date_to = local_date_to.astimezone(utc).replace(tzinfo=None)
 
     @api.constrains('date_from', 'date_to')
     def check_dates(self):
         if self.filtered(lambda leave: leave.date_from > leave.date_to):
             raise ValidationError(_('The start date of the time off must be earlier than the end date.'))
-
-    @api.onchange('resource_id')
-    def onchange_resource(self):
-        if self.resource_id:
-            self.calendar_id = self.resource_id.calendar_id
 
     def _copy_leave_vals(self):
         self.ensure_one()

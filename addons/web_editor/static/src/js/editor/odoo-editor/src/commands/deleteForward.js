@@ -9,7 +9,7 @@ import {
     DIRECTIONS,
     CTYPES,
     leftPos,
-    isFontAwesome,
+    isIconElement,
     rightLeafOnlyNotBlockNotEditablePath,
     rightLeafOnlyPathNotBlockNotEditablePath,
     isNotEditableNode,
@@ -143,7 +143,7 @@ HTMLElement.prototype.oDeleteForward = function (offset) {
         return;
     }
 
-    if (firstLeafNode && (isFontAwesome(firstLeafNode) || isNotEditableNode(firstLeafNode))) {
+    if (firstLeafNode && (isIconElement(firstLeafNode) || isNotEditableNode(firstLeafNode))) {
         const nextSibling = firstLeafNode.nextSibling;
         const nextSiblingText = nextSibling ? nextSibling.textContent : '';
         firstLeafNode.remove();
@@ -163,7 +163,20 @@ HTMLElement.prototype.oDeleteForward = function (offset) {
         return;
     }
 
-    const nextSibling = this.nextSibling;
+    let nextSibling = this.nextSibling;
+    while (nextSibling && isWhitespace(nextSibling)) {
+        const index = childNodeIndex(nextSibling);
+        const left = getState(nextSibling, index, DIRECTIONS.LEFT).cType;
+        const right = getState(nextSibling, index, DIRECTIONS.RIGHT).cType;
+        if (left === CTYPES.BLOCK_OUTSIDE && right === CTYPES.BLOCK_OUTSIDE) {
+            // If the next sibling is a whitespace, remove it.
+            nextSibling.remove();
+            nextSibling = this.nextSibling;
+        } else {
+            break;
+        }
+    }
+
     if (
         (
             offset === this.childNodes.length ||

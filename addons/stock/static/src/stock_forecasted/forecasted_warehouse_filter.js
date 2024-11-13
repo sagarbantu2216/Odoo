@@ -5,6 +5,9 @@ import { useService } from "@web/core/utils/hooks";
 import { Component, onWillStart } from "@odoo/owl";
 
 export class ForecastedWarehouseFilter extends Component {
+    static template = "stock.ForecastedWarehouseFilter";
+    static components = { Dropdown, DropdownItem };
+    static props = { action: Object, setWarehouseInContext: Function, warehouses: Array };
 
     setup() {
         this.orm = useService("orm");
@@ -21,13 +24,23 @@ export class ForecastedWarehouseFilter extends Component {
         this.props.setWarehouseInContext(Number(id));
     }
 
-    get activeWarehouse(){
-        return this.context.warehouse ?
-            this.warehouses.find(w => w.id == this.context.warehouse) :
-            this.warehouses[0];
+    get activeWarehouse() {
+        let warehouseIds = null;
+        if (Array.isArray(this.context.warehouse_id)) {
+            warehouseIds = this.context.warehouse_id;
+        } else {
+            warehouseIds = [this.context.warehouse_id];
+        }
+        return warehouseIds
+            ? this.warehouses.find((w) => warehouseIds.includes(w.id))
+            : this.warehouses[0];
+    }
+
+    get warehousesItems() {
+        return this.warehouses.map(warehouse => ({
+            id: warehouse.id,
+            label: warehouse.name,
+            onSelected: () => this._onSelected(warehouse.id),
+        }));
     }
 }
-
-ForecastedWarehouseFilter.template = 'stock.ForecastedWarehouseFilter';
-ForecastedWarehouseFilter.components = {Dropdown, DropdownItem};
-ForecastedWarehouseFilter.props = {action: Object, setWarehouseInContext : Function, warehouses: Array};

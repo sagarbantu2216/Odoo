@@ -119,10 +119,26 @@ class SaleOrderLine(models.Model):
         :return: Dictionary with incoming moves and outgoing moves
         :rtype: dict
         """
+        # The first move created was the one created from the intial rule that started it all.
+        sorted_moves = self.move_ids.sorted('id')
+        triggering_rule_ids = []
+        seen_wh_ids = set()
+        for move in sorted_moves:
+            if move.warehouse_id.id not in seen_wh_ids:
+                triggering_rule_ids.append(move.rule_id.id)
+                seen_wh_ids.add(move.warehouse_id.id)
+
         return {
-            'incoming_moves': lambda m: m.location_dest_id.usage == 'customer' and \
-                        (not m.origin_returned_move_id or (m.origin_returned_move_id and m.to_refund)),
-            'outgoing_moves': lambda m: m.location_dest_id.usage != 'customer' and m.to_refund
+            'incoming_moves': lambda m: (
+                m.state != 'cancel' and not m.scrapped
+                and m.rule_id.id in triggering_rule_ids
+                and m.location_final_id.usage == 'customer'
+                and (not m.origin_returned_move_id or (m.origin_returned_move_id and m.to_refund)
+            )),
+            'outgoing_moves': lambda m: (
+                m.state != 'cancel' and not m.scrapped
+                and m.location_dest_id.usage != 'customer' and m.to_refund
+            ),
         }
 
     def _get_qty_procurement(self, previous_product_uom_qty=False):
@@ -130,7 +146,7 @@ class SaleOrderLine(models.Model):
         # Specific case when we change the qty on a SO for a kit product.
         # We don't try to be too smart and keep a simple approach: we use the quantity of entire
         # kits that are currently in delivery
-        bom = self.env['mrp.bom']._bom_find(self.product_id, bom_type='phantom')[self.product_id]
+        bom = self.env['mrp.bom'].sudo()._bom_find(self.product_id, bom_type='phantom', company_id=self.company_id.id)[self.product_id]
         if bom:
             moves = self.move_ids.filtered(lambda r: r.state != 'cancel' and not r.scrapped)
             filters = self._get_incoming_outgoing_moves_filter()

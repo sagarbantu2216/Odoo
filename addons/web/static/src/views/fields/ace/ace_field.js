@@ -1,5 +1,3 @@
-/** @odoo-module **/
-
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { useBus } from "@web/core/utils/hooks";
@@ -60,6 +58,7 @@ export class AceField extends Component {
                 await this.props.record.update({ [this.props.name]: this.editedValue });
             }
             this.isDirty = false;
+            this.props.record.model.bus.trigger("FIELD_IS_DIRTY", false);
         }
     }
 }

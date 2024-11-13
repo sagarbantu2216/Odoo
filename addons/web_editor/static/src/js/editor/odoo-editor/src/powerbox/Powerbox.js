@@ -198,7 +198,7 @@ export class Powerbox {
                 commandElWrapper.querySelector('.oe-powerbox-commandDescription').innerText = command.description;
                 categoryWrapperEl.append(commandElWrapper);
                 // Handle events on command (activate and pick).
-                commandElWrapper.addEventListener('mousemove', () => {
+                commandElWrapper.addEventListener('mouseenter', () => {
                     this.el.querySelector('.oe-powerbox-commandWrapper.active').classList.remove('active');
                     this._context.selectedCommand = command;
                     commandElWrapper.classList.add('active');
@@ -278,11 +278,7 @@ export class Powerbox {
      * @private
      */
     _resetPosition() {
-        let options = {};
-        if (this.getContextFromParentRect) {
-            options['parentContextRect'] = this.getContextFromParentRect();
-        }
-        const position = getRangePosition(this.el, this.document, options);
+        const position = getRangePosition(this.el, this.document, { getContextFromParentRect: this.getContextFromParentRect });
         if (position) {
             let { left, top } = position;
             this.el.style.left = `${left}px`;
@@ -367,7 +363,7 @@ export class Powerbox {
      * @param {KeyboardEvent} ev
      */
     _onKeydown(ev) {
-        if (ev.key === 'Enter') {
+        if (['Enter', 'Tab'].includes(ev.key)) {
             ev.stopImmediatePropagation();
             this._pickCommand();
             ev.preventDefault();

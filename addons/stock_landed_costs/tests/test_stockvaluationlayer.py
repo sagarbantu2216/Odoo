@@ -10,12 +10,12 @@ from odoo.addons.stock_landed_costs.tests.common import TestStockLandedCostsComm
 class TestStockValuationLCCommon(TestStockLandedCostsCommon):
 
     @classmethod
-    def setUpClass(cls, chart_template_ref=None):
-        super().setUpClass(chart_template_ref=chart_template_ref)
+    def setUpClass(cls):
+        super().setUpClass()
 
         cls.product1 = cls.env['product.product'].create({
             'name': 'product1',
-            'type': 'product',
+            'is_storable': True,
             'categ_id': cls.stock_account_product_categ.id,
         })
         cls.productlc1 = cls.env['product.product'].create({
@@ -67,7 +67,7 @@ class TestStockValuationLCCommon(TestStockLandedCostsCommon):
         lc.button_validate()
         return lc
 
-    def _make_in_move(self, product, quantity, unit_cost=None, create_picking=False):
+    def _make_in_move(self, product, quantity, unit_cost=None, create_picking=False, product_uom=False):
         """ Helper to create and validate a receipt move.
         """
         unit_cost = unit_cost or product.standard_price
@@ -76,7 +76,7 @@ class TestStockValuationLCCommon(TestStockLandedCostsCommon):
             'product_id': product.id,
             'location_id': self.env.ref('stock.stock_location_suppliers').id,
             'location_dest_id': self.company_data['default_warehouse'].lot_stock_id.id,
-            'product_uom': self.env.ref('uom.product_uom_unit').id,
+            'product_uom': product_uom.id if product_uom else self.env.ref('uom.product_uom_unit').id,
             'product_uom_qty': quantity,
             'price_unit': unit_cost,
             'picking_type_id': self.company_data['default_warehouse'].in_type_id.id,
@@ -254,6 +254,20 @@ class TestStockValuationLCFIFO(TestStockValuationLCCommon):
         move2 = self._make_out_move(self.product1, 1)
         self.assertEqual(move2.stock_valuation_layer_ids.value, -115)
 
+    def test_landed_cost_different_uom(self):
+        """
+        Check that the SVL is correctly updated with the landed cost divided by the quantity in the product UOM.
+        """
+        uom_gram = self.env.ref('uom.product_uom_gram')
+        uom_kgm = self.env.ref('uom.product_uom_kgm')
+        # the product uom is in gram but the transfer is in kg
+        self.product1.uom_id = uom_gram
+        move1 = self._make_in_move(self.product1, 1, unit_cost=10, create_picking=True, product_uom=uom_kgm)
+        self.assertEqual(move1.stock_valuation_layer_ids[0].remaining_value, 10000)
+        self.assertEqual(move1.stock_valuation_layer_ids[0].remaining_qty, 1000)
+        self._make_lc(move1, 250)
+        self.assertEqual(move1.stock_valuation_layer_ids[0].remaining_value, 10250)
+
 
 @tagged('-at_install', 'post_install')
 class TestStockValuationLCAVCO(TestStockValuationLCCommon):
@@ -323,9 +337,7 @@ class TestStockValuationLCAVCO(TestStockValuationLCCommon):
         receipt.move_line_ids.quantity = 1
         receipt.button_validate()
 
-        action = po.action_create_invoice()
-        bill = self.env['account.move'].browse(action['res_id'])
-        bill_form = Form(bill)
+        bill_form = Form.from_action(self.env, po.action_create_invoice())
         bill_form.invoice_date = bill_form.date
         with bill_form.invoice_line_ids.new() as inv_line:
             inv_line.product_id = self.productlc1
@@ -334,8 +346,7 @@ class TestStockValuationLCAVCO(TestStockValuationLCCommon):
         bill = bill_form.save()
         bill.action_post()
 
-        action = bill.button_create_landed_costs()
-        lc_form = Form(self.env[action['res_model']].browse(action['res_id']))
+        lc_form = Form.from_action(self.env, bill.button_create_landed_costs())
         lc_form.picking_ids.add(receipt)
         lc = lc_form.save()
         lc.button_validate()
@@ -422,8 +433,7 @@ class TestStockValuationLCFIFOVB(TestStockValuationLCCommon):
         self.assertEqual(payable_aml.debit, 0)
         self.assertEqual(payable_aml.credit, 50)
 
-        action = lcvb.button_create_landed_costs()
-        lc = Form(self.env[action['res_model']].browse(action['res_id']))
+        lc = Form.from_action(self.env, lcvb.button_create_landed_costs())
         lc.picking_ids.add(receipt)
         lc = lc.save()
         lc.button_validate()
@@ -488,8 +498,7 @@ class TestStockValuationLCFIFOVB(TestStockValuationLCCommon):
         vb = vb.save()
         vb.action_post()
 
-        action = vb.button_create_landed_costs()
-        lc = Form(self.env[action['res_model']].browse(action['res_id']))
+        lc = Form.from_action(self.env, vb.button_create_landed_costs())
         lc.picking_ids.add(receipt)
         lc = lc.save()
         lc.button_validate()
@@ -564,8 +573,7 @@ class TestStockValuationLCFIFOVB(TestStockValuationLCCommon):
         self.assertEqual(payable_aml.debit, 0)
         self.assertEqual(payable_aml.credit, 50)
 
-        action = lcvb.button_create_landed_costs()
-        lc = Form(self.env[action['res_model']].browse(action['res_id']))
+        lc = Form.from_action(self.env, lcvb.button_create_landed_costs())
         lc.picking_ids.add(receipt)
         lc = lc.save()
         lc.button_validate()
@@ -582,3 +590,75 @@ class TestStockValuationLCFIFOVB(TestStockValuationLCCommon):
 
         self.assertEqual(self.product1.quantity_svl, 10)
         self.assertEqual(self.product1.value_svl, 150)
+
+    def test_create_landed_cost_from_bill_multi_currencies(self):
+        # create a vendor bill in EUR where base currency in USD
+        company = self.env.user.company_id
+        currency_grp = self.env.ref('base.group_multi_currency')
+        self.env.user.write({'groups_id': [(4, currency_grp.id)]})
+        usd_currency = self.env.ref('base.USD')
+        eur_currency = self.env.ref('base.EUR')
+        eur_currency.active = True
+
+        company.currency_id = usd_currency
+
+        invoice_date = '2023-01-01'
+        accounting_date = '2024-01-31'
+
+        self.cr.execute("UPDATE res_company SET currency_id = %s WHERE id = %s", (usd_currency.id, company.id))
+        self.env['res.currency.rate'].search([]).unlink()
+        self.env['res.currency.rate'].create({
+            'name': invoice_date,
+            'rate': 1.0,
+            'currency_id': usd_currency.id,
+            'company_id': company.id,
+        })
+
+        self.env['res.currency.rate'].create({
+            'name': invoice_date,
+            'rate': 0.5,
+            'currency_id': eur_currency.id,
+            'company_id': company.id,
+        })
+
+        self.env['res.currency.rate'].create({
+            'name': accounting_date,
+            'rate': 0.25,
+            'currency_id': eur_currency.id,
+            'company_id': company.id,
+        })
+
+        po_form = Form(self.env['purchase.order'])
+        po_form.partner_id = self.vendor1
+        with po_form.order_line.new() as po_line:
+            po_line.product_id = self.product1
+            po_line.product_qty = 1
+            po_line.price_unit = 10
+        po = po_form.save()
+        po.button_confirm()
+
+        receipt = po.picking_ids
+        receipt.move_line_ids.quantity = 1
+        receipt.button_validate()
+
+        action = po.action_create_invoice()
+        bill = self.env['account.move'].browse(action['res_id'])
+        bill_form = Form(bill)
+        bill_form.invoice_date = invoice_date
+        bill_form.date = accounting_date
+        bill_form.currency_id = eur_currency
+
+        with bill_form.invoice_line_ids.new() as inv_line:
+            inv_line.product_id = self.productlc1
+            inv_line.price_unit = 5
+            inv_line.currency_id = eur_currency
+
+        bill = bill_form.save()
+        bill.action_post()
+
+        lc_form = Form.from_action(self.env, bill.button_create_landed_costs())
+        lc_form.picking_ids.add(receipt)
+        lc = lc_form.save()
+        lc.button_validate()
+
+        self.assertEqual(lc.cost_lines.price_unit, 10)

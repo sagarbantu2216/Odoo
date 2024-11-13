@@ -1,5 +1,6 @@
 /** @odoo-module **/
 
+import { rpc } from "@web/core/network/rpc";
 import { pick } from "@web/core/utils/objects";
 import {getAffineApproximation, getProjective} from "@web_editor/js/editor/perspective_utils";
 
@@ -464,12 +465,10 @@ export async function activateCropper(image, aspectRatio, dataset) {
  * Marks an <img> with its attachment data (originalId, originalSrc, mimetype)
  *
  * @param {HTMLImageElement} img the image whose attachment data should be found
- * @param {Function} rpc a function that can be used to make the RPC. Typically
- *   this would be passed as 'this._rpc.bind(this)' from widgets.
  * @param {string} [attachmentSrc=''] specifies the URL of the corresponding
  * attachment if it can't be found in the 'src' attribute.
  */
-export async function loadImageInfo(img, rpc, attachmentSrc = '') {
+export async function loadImageInfo(img, attachmentSrc = '') {
     const src = attachmentSrc || img.getAttribute('src');
     // If there is a marked originalSrc, the data is already loaded.
     // If the image does not have the "mimetypeBeforeConversion" attribute, it
@@ -550,31 +549,6 @@ export function isImageSupportedForStyle(img) {
     const isEditableRootElement = ('oeXpath' in img.dataset);
 
     return !isTFieldImg && !isEditableRootElement;
-}
-/**
- * @param {HTMLImageElement} img
- * @returns {Promise<Boolean>}
- */
-export async function isImageCorsProtected(img) {
-    const src = img.getAttribute('src');
-    if (!src) {
-        return false;
-    }
-    let isCorsProtected = false;
-    if (!src.startsWith("/") || /\/web\/image\/\d+-redirect\//.test(src)) {
-        // The `fetch()` used later in the code might fail if the image is
-        // CORS protected. We check upfront if it's the case.
-        // Two possible cases:
-        // 1. the `src` is an absolute URL from another domain.
-        //    For instance, abc.odoo.com vs abc.com which are actually the
-        //    same database behind.
-        // 2. A "attachment-url" which is just a redirect to the real image
-        //    which could be hosted on another website.
-        isCorsProtected = await fetch(src, {method: 'HEAD'})
-            .then(() => false)
-            .catch(() => true);
-    }
-    return isCorsProtected;
 }
 
 /**

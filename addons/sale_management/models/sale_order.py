@@ -95,6 +95,7 @@ class SaleOrder(models.Model):
     @api.onchange('company_id')
     def _onchange_company_id(self):
         """Trigger quotation template recomputation on unsaved records company change"""
+        super()._onchange_company_id()
         if self._origin.id:
             return
         self._compute_sale_order_template_id()
@@ -129,21 +130,29 @@ class SaleOrder(models.Model):
 
     #=== ACTION METHODS ===#
 
+    def _get_confirmation_template(self):
+        self.ensure_one()
+        return self.sale_order_template_id.mail_template_id or super()._get_confirmation_template()
+
     def action_confirm(self):
         res = super().action_confirm()
-        if self.env.su:
-            self = self.with_user(SUPERUSER_ID)
 
+        if self.env.context.get('send_email'):
+            # Mail already sent in super method
+            return res
+
+        # When an order is confirmed from backend (send_email=False), if the quotation template has
+        # a specified mail template, send it as it's probably meant to share additional information.
         for order in self:
-            if order.sale_order_template_id and order.sale_order_template_id.mail_template_id:
-                order.message_post_with_source(order.sale_order_template_id.mail_template_id)
+            if order.sale_order_template_id.mail_template_id:
+                order._send_order_notification_mail(order.sale_order_template_id.mail_template_id)
         return res
 
     def _recompute_prices(self):
         super()._recompute_prices()
         # Special case: we want to overwrite the existing discount on _recompute_prices call
         # i.e. to make sure the discount is correctly reset
-        # if pricelist discount_policy is different than when the price was first computed.
+        # if pricelist rule is different than when the price was first computed.
         self.sale_order_option_ids.discount = 0.0
         self.sale_order_option_ids._compute_price_unit()
         self.sale_order_option_ids._compute_discount()

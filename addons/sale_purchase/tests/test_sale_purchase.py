@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import Command
@@ -11,11 +10,23 @@ from odoo.addons.sale_purchase.tests.common import TestCommonSalePurchaseNoChart
 class TestSalePurchase(TestCommonSalePurchaseNoChart):
 
     @classmethod
-    def setUpClass(cls, chart_template_ref=None):
-        super().setUpClass(chart_template_ref=chart_template_ref)
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.company_data_2 = cls.setup_other_company()
 
         # create a generic Sale Order with 2 classical products and a purchase service
-        SaleOrder = cls.env['sale.order'].with_context(tracking_disable=True)
+        SaleOrder = cls.env['sale.order']
+        cls.analytic_plan = cls.env['account.analytic.plan'].create({'name': 'Plan Test'})
+        cls.test_analytic_account_1, cls.test_analytic_account_2 = cls.env['account.analytic.account'].create([
+            {
+                'name': 'analytic_account_test_1',
+                'plan_id': cls.analytic_plan.id,
+            }, {
+                'name': 'analytic_account_test_2',
+                'plan_id': cls.analytic_plan.id,
+            },
+        ])
         cls.sale_order_1 = SaleOrder.create({
             'partner_id': cls.partner_a.id,
             'partner_invoice_id': cls.partner_a.id,
@@ -80,6 +91,8 @@ class TestSalePurchase(TestCommonSalePurchaseNoChart):
 
         self.assertEqual(len(purchase_order), 1, "Only one PO should have been created, from the 2 Sales orders")
         self.assertEqual(len(purchase_order.order_line), 2, "The purchase order should have 2 lines")
+        self.assertIn(self.sale_order_1.name, purchase_order.origin, "The PO should have SO 1 in its source documents")
+        self.assertIn(self.sale_order_2.name, purchase_order.origin, "The PO should have SO 2 in its source documents")
         self.assertEqual(len(purchase_lines_so1), 1, "Only one SO line from SO 1 should have create a PO line")
         self.assertEqual(len(purchase_lines_so2), 1, "Only one SO line from SO 2 should have create a PO line")
         self.assertEqual(len(purchase_order.activity_ids), 0, "No activity should be scheduled on the PO")

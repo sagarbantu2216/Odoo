@@ -1,24 +1,53 @@
 /** @odoo-module **/
 
 import { _t } from "@web/core/l10n/translation";
+import { rpc } from "@web/core/network/rpc";
 import { useAutofocus, useService } from '@web/core/utils/hooks';
 import { debounce } from '@web/core/utils/timing';
 
 import { Component, useState, useRef, onMounted, onWillStart } from "@odoo/owl";
 
-class VideoOption extends Component {}
-VideoOption.template = 'web_editor.VideoOption';
+class VideoOption extends Component {
+    static template = "web_editor.VideoOption";
+    static props = {
+        description: {type: String, optional: true},
+        label: {type: String, optional: true},
+        onChangeOption: Function,
+        value: {type: Boolean, optional: true},
+    };
+}
 
 class VideoIframe extends Component {
-    static template = 'web_editor.VideoIframe';
+    static template = "web_editor.VideoIframe";
     static props = {
         src: { type: String },
     };
 }
 
 export class VideoSelector extends Component {
+    static mediaSpecificClasses = ["media_iframe_video"];
+    static mediaSpecificStyles = [];
+    static mediaExtraClasses = [];
+    static tagNames = ["IFRAME", "DIV"];
+    static template = "web_editor.VideoSelector";
+    static components = {
+        VideoIframe,
+        VideoOption,
+    };
+    static props = {
+        selectMedia: Function,
+        errorMessages: Function,
+        vimeoPreviewIds: {type: Array, optional: true},
+        isForBgVideo: {type: Boolean, optional: true},
+        media: {type: Object, optional: true},
+        "*": true,
+    };
+    static defaultProps = {
+        vimeoPreviewIds: [],
+        isForBgVideo: false,
+    };
+
     setup() {
-        this.rpc = useService('rpc');
         this.http = useService('http');
 
         this.PLATFORMS = {
@@ -49,12 +78,6 @@ export class VideoSelector extends Component {
                 label: _t("Hide fullscreen button"),
                 platforms: [this.PLATFORMS.youtube],
                 urlParameter: 'fs=0',
-                isHidden: () => this.state.options.filter(option => option.id === 'hide_controls')[0].value,
-            },
-            hide_yt_logo: {
-                label: _t("Hide Youtube logo"),
-                platforms: [this.PLATFORMS.youtube],
-                urlParameter: 'modestbranding=1',
                 isHidden: () => this.state.options.filter(option => option.id === 'hide_controls')[0].value,
             },
             hide_dm_logo: {
@@ -211,7 +234,7 @@ export class VideoSelector extends Component {
      * Keep rpc call in distinct method make it patchable by test.
      */
     async _getVideoURLData(url, options) {
-        return await this.rpc('/web_editor/video_url/data', {
+        return await rpc('/web_editor/video_url/data', {
             video_url: url,
             ...options,
         });
@@ -227,23 +250,10 @@ export class VideoSelector extends Component {
             div.innerHTML = `
                 <div class="css_editable_mode_display"></div>
                 <div class="media_iframe_video_size" contenteditable="false"></div>
-                <iframe frameborder="0" contenteditable="false" allowfullscreen="allowfullscreen"></iframe>
+                <iframe loading="lazy" frameborder="0" contenteditable="false" allowfullscreen="allowfullscreen"></iframe>
             `;
             div.querySelector('iframe').src = video.src;
             return div;
         });
     }
 }
-VideoSelector.mediaSpecificClasses = ['media_iframe_video'];
-VideoSelector.mediaSpecificStyles = [];
-VideoSelector.mediaExtraClasses = [];
-VideoSelector.tagNames = ['IFRAME', 'DIV'];
-VideoSelector.template = 'web_editor.VideoSelector';
-VideoSelector.components = {
-    VideoIframe,
-    VideoOption,
-};
-VideoSelector.defaultProps = {
-    vimeoPreviewIds: [],
-    isForBgVideo: false,
-};

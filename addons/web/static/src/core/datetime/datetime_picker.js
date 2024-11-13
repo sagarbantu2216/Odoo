@@ -1,5 +1,3 @@
-/** @odoo-module **/
-
 import { Component, onWillRender, onWillUpdateProps, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import {
@@ -331,6 +329,7 @@ export class DateTimePicker extends Component {
         },
         isDateValid: { type: Function, optional: true },
         dayCellClass: { type: Function, optional: true },
+        tz: { type: String, optional: true },
     };
 
     static defaultProps = {
@@ -422,8 +421,10 @@ export class DateTimePicker extends Component {
             throw new Error(`DateTimePicker error: given "maxDate" comes before "minDate".`);
         }
 
-        const timeValues = this.values.map((val) => [
-            (val || DateTime.local()).hour,
+        const timeValues = this.values.map((val, index) => [
+            index === 1 && !this.values[1]
+                ? (val || DateTime.local()).hour + 1
+                : (val || DateTime.local()).hour,
             val?.minute || 0,
             val?.second || 0,
         ]);
@@ -481,11 +482,7 @@ export class DateTimePicker extends Component {
      * @param {number} focusedDateIndex
      */
     adjustFocus(values, focusedDateIndex) {
-        if (
-            !this.shouldAdjustFocusDate &&
-            this.state.focusDate &&
-            focusedDateIndex === this.props.focusedDateIndex
-        ) {
+        if (!this.shouldAdjustFocusDate && this.state.focusDate) {
             return;
         }
 
@@ -514,9 +511,15 @@ export class DateTimePicker extends Component {
     applyValueAtIndex(value, valueIndex) {
         const result = [...this.values];
         if (this.props.range) {
-            if (result[0] && value.endOf("day") < result[0].startOf("day")) {
+            if (
+                (result[0] && value.endOf("day") < result[0].startOf("day")) ||
+                (result[1] && !result[0])
+            ) {
                 valueIndex = 0;
-            } else if (result[1] && result[1].endOf("day") < value.startOf("day")) {
+            } else if (
+                (result[1] && result[1].endOf("day") < value.startOf("day")) ||
+                (result[0] && !result[1])
+            ) {
                 valueIndex = 1;
             }
         }

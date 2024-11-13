@@ -1,5 +1,3 @@
-/** @odoo-module **/
-
 /**
  * Browser
  *
@@ -9,9 +7,11 @@
  * object for a test.
  */
 
-let sessionStorage = window.sessionStorage;
-let localStorage = window.localStorage;
+let sessionStorage;
+let localStorage;
 try {
+    sessionStorage = window.sessionStorage;
+    localStorage = window.localStorage;
     // Safari crashes in Private Browsing
     localStorage.setItem("__localStorage__", "true");
     localStorage.removeItem("__localStorage__");
@@ -92,7 +92,7 @@ export function makeRAMLocalStorage() {
             window.dispatchEvent(new StorageEvent("storage", { key, newValue }));
         },
         getItem(key) {
-            return store[key];
+            return store[key] ?? null;
         },
         clear() {
             store = {};

@@ -14,6 +14,7 @@ import { registry } from "@web/core/registry";
  * time the user changes the body.
  */
 export class SmsWidget extends EmojisTextField {
+    static template = "sms.SmsWidget";
     setup() {
         super.setup();
         this._emojiAdded = () => this.props.record.update({ [this.props.name]: this.targetEditElement.el.value });
@@ -24,8 +25,11 @@ export class SmsWidget extends EmojisTextField {
         return this._extractEncoding(this.props.record.data[this.props.name] || '');
     }
     get nbrChar() {
-        const content = this.props.record.data[this.props.name] || '';
+        const content = this._getValueForSmsCounts(this.props.record.data[this.props.name] || "");
         return content.length + (content.match(/\n/g) || []).length;
+    }
+    get nbrCharExplanation() {
+        return "";
     }
     get nbrSMS() {
         return this._countSMS(this.nbrChar, this.encoding);
@@ -69,6 +73,21 @@ export class SmsWidget extends EmojisTextField {
         return 'UNICODE';
     }
 
+    /**
+     * Implement if more characters are going to be sent then those appearing in
+     * value, if that value is processed before being sent.
+     * E.g., links are converted to trackers in mass_mailing_sms.
+     *
+     * Note: goes with an explanation in nbrCharExplanation
+     *
+     * @param {String} value content to be parsed for counting extra characters
+     * @return string length-corrected value placeholder for the post-processed
+     * state
+     */
+    _getValueForSmsCounts(value) {
+        return value;
+    }
+
     //--------------------------------------------------------------------------
     // Handlers
     //--------------------------------------------------------------------------
@@ -78,6 +97,7 @@ export class SmsWidget extends EmojisTextField {
      * @private
      */
     async onBlur() {
+        await super.onBlur();
         var content = this.props.record.data[this.props.name] || '';
         if( !content.trim().length && content.length > 0) {
             this.notification.add(
@@ -97,7 +117,6 @@ export class SmsWidget extends EmojisTextField {
         await this.props.record.update({ [this.props.name]: this.targetEditElement.el.value });
     }
 }
-SmsWidget.template = 'sms.SmsWidget';
 
 export const smsWidget = {
     ...emojisTextField,

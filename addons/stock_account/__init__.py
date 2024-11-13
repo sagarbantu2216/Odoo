@@ -8,7 +8,7 @@ from . import wizard
 
 def _configure_journals(env):
     # if we already have a coa installed, create journal and set property field
-    for company in env['res.company'].search([('chart_template', '!=', False)]):
+    for company in env['res.company'].search([('chart_template', '!=', False)], order="parent_path"):
         ChartTemplate = env['account.chart.template'].with_company(company)
         template_code = company.chart_template
         full_data = ChartTemplate._get_chart_template_data(template_code)
@@ -39,3 +39,4 @@ def _configure_journals(env):
             data['account.journal'] = ChartTemplate._get_stock_account_journal(template_code)
         ChartTemplate._load_data(data)
         ChartTemplate._post_load_data(template_code, company, template_data)
+        ChartTemplate._load_wip_accounts(company, full_data['res.company'])

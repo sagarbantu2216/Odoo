@@ -18,7 +18,8 @@ from odoo.addons.test_mail.data.test_mail_data import MAIL_TEMPLATE, THAI_EMAIL_
 from odoo.addons.test_mail.models.test_mail_models import MailTestGateway
 from odoo.sql_db import Cursor
 from odoo.tests import tagged, RecordCapturer
-from odoo.tools import email_split_and_format, formataddr, mute_logger
+from odoo.tools import mute_logger
+from odoo.tools.mail import email_split_and_format, formataddr
 
 
 @tagged('mail_gateway')
@@ -750,16 +751,13 @@ class TestMailgateway(MailCommon):
 
     @mute_logger('odoo.addons.mail.models.mail_thread')
     def test_message_process_create_uid_crash(self):
-        def _employee_crash(*args, **kwargs):
+        def _employee_crash(records, operation):
             """ If employee is test employee, consider they have no access on document """
-            recordset = args[0]
-            if recordset.env.uid == self.user_employee.id and not recordset.env.su:
-                if kwargs.get('raise_exception', True):
-                    raise exceptions.AccessError('Hop hop hop Ernest, please step back.')
-                return False
+            if records.env.uid == self.user_employee.id and not records.env.su:
+                return lambda: exceptions.AccessError('Hop hop hop Ernest, please step back.'), records
             return DEFAULT
 
-        with patch.object(MailTestGateway, 'check_access_rights', autospec=True, side_effect=_employee_crash):
+        with patch.object(MailTestGateway, 'check_access', autospec=True, side_effect=_employee_crash):
             record = self.format_and_process(MAIL_TEMPLATE, self.user_employee.email_formatted, f'groups@{self.alias_domain}', subject='NoEmployeeAllowed')
         self.assertEqual(record.create_uid, self.user_employee)
         self.assertEqual(record.message_ids[0].subject, 'NoEmployeeAllowed')
@@ -1924,13 +1922,35 @@ class TestMailgateway(MailCommon):
         self.assertIn("Chauss������e de Bruxelles", record.message_ids.attachment_ids.raw.decode())
 
     @mute_logger('odoo.addons.mail.models.mail_thread')
-    def test_message_process_file_omitted_charset(self):
+    def test_message_process_file_omitted_charset_xml(self):
         """ For incoming email containing an xml attachment with omitted charset and containing an UTF8 payload we
         should parse the attachment using UTF-8.
         """
-        record = self.format_and_process(test_mail_data.MAIL_MULTIPART_OMITTED_CHARSET, self.email_from, f'groups@{self.alias_domain}')
+        record = self.format_and_process(test_mail_data.MAIL_MULTIPART_OMITTED_CHARSET_XML, self.email_from, f'groups@{self.alias_domain}')
         self.assertEqual(record.message_ids.attachment_ids.name, 'bis3.xml')
         self.assertEqual("<Invoice>Chaussée de Bruxelles</Invoice>", record.message_ids.attachment_ids.raw.decode())
+
+    @mute_logger('odoo.addons.mail.models.mail_thread')
+    def test_message_process_file_omitted_charset_csv(self):
+        """ For incoming email containing a csv attachment with omitted charset and containing an UTF8 payload we
+        should parse the attachment using UTF-8.
+        """
+        record = self.format_and_process(test_mail_data.MAIL_MULTIPART_OMITTED_CHARSET_CSV, self.email_from, f'groups@{self.alias_domain}')
+        self.assertEqual(record.message_ids.attachment_ids.name, 'bis3.csv')
+        self.assertEqual("\ufeffAuftraggeber;LieferadresseStraße;", record.message_ids.attachment_ids.raw.decode())
+
+    @mute_logger('odoo.addons.mail.models.mail_thread')
+    def test_message_process_file_omitted_charset_txt(self):
+        """ For incoming email containing a txt attachment with omitted charset and containing an UTF8 payload we
+        should parse the attachment using UTF-8.
+        """
+        test_string = ("Äpfel und Birnen sind Früchte, die im Herbst geerntet werden. In der Nähe des Flusses steht ein großes, "
+            "altes Schloss. Über den Dächern sieht man oft Vögel fliegen. Müller und Schröder sind typische deutsche Nachnamen. "
+            "Die Straße, in der ich wohne, heißt „Bachstraße“ und ist sehr ruhig. Überall im Wald wachsen Bäume mit kräftigen Ästen. "
+            "Können wir uns über die Pläne für das nächste Wochenende unterhalten?")
+        record = self.format_and_process(test_mail_data.MAIL_MULTIPART_OMITTED_CHARSET_TXT, self.email_from, f'groups@{self.alias_domain}')
+        self.assertEqual(record.message_ids.attachment_ids.name, 'bis3.txt')
+        self.assertEqual(test_string, record.message_ids.attachment_ids.raw.decode())
 
     @mute_logger('odoo.addons.mail.models.mail_thread')
     def test_message_route_reply_model_none(self):

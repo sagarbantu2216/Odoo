@@ -20,7 +20,7 @@ class StockRule(models.Model):
 
     def _get_message_dict(self):
         message_dict = super(StockRule, self)._get_message_dict()
-        __, destination, __ = self._get_message_values()
+        __, destination, __, __ = self._get_message_values()
         message_dict.update({
             'buy': _('When products are needed in <b>%s</b>, <br/> '
                      'a request for quotation is created to fulfill the need.<br/>'
@@ -60,7 +60,7 @@ class StockRule(models.Model):
                 supplier = procurement.values['orderpoint_id'].supplier_id
             else:
                 supplier = procurement.product_id.with_company(procurement.company_id.id)._select_seller(
-                    partner_id=procurement.values.get("supplierinfo_name") or (procurement.values.get("group_id") and procurement.values.get("group_id").partner_id),
+                    partner_id=self._get_partner_id(procurement.values, rule),
                     quantity=procurement.product_qty,
                     date=max(procurement_date_planned.date(), fields.Date.today()),
                     uom_id=procurement.product_uom)
@@ -146,9 +146,7 @@ class StockRule(models.Model):
                     # order to create it in batch.
                     partner = procurement.values['supplier'].partner_id
                     po_line_values.append(self.env['purchase.order.line']._prepare_purchase_order_line_from_procurement(
-                        procurement.product_id, procurement.product_qty,
-                        procurement.product_uom, procurement.company_id,
-                        procurement.values, po))
+                        *procurement, po))
                     # Check if we need to advance the order date for the new line
                     order_date_planned = procurement.values['date_planned'] - relativedelta(
                         days=procurement.values['supplier'].delay)
@@ -331,3 +329,6 @@ class StockRule(models.Model):
         if self.location_dest_id.usage == "supplier":
             res['purchase_line_id'], res['partner_id'] = move_to_copy._get_purchase_line_and_partner_from_chain()
         return res
+
+    def _get_partner_id(self, values, rule):
+        return values.get("supplierinfo_name") or (values.get("group_id") and values.get("group_id").partner_id)

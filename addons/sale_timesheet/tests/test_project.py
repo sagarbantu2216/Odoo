@@ -176,9 +176,16 @@ class TestProject(TestCommonSaleTimesheet):
         })
 
         self.project_global.invalidate_recordset()
-        self.project_global.analytic_account_id.invalidate_recordset()
+        self.project_global.account_id.invalidate_recordset()
         self.assertEqual(self.project_global.analytic_account_balance, expected_analytic_account_balance)
 
     def test_open_product_form_with_default_service_policy(self):
-        form = Form(self.env['product.product'].with_context(default_detailed_type='service', default_service_policy='delivered_timesheet'))
+        form = Form(self.env['product.product'].with_context(
+            default_type='service',
+            default_service_policy='delivered_timesheet',
+        ))
         self.assertEqual('delivered_timesheet', form.service_policy)
+
+    def test_duplicate_project_allocated_hours(self):
+        self.project_global.allocated_hours = 10
+        self.assertEqual(self.project_global.copy().allocated_hours, 10)

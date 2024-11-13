@@ -4,8 +4,9 @@ import { _t } from "@web/core/l10n/translation";
 import { sprintf } from "@web/core/utils/strings";
 
 import * as spreadsheet from "@odoo/o-spreadsheet";
+import { EvaluationError } from "@odoo/o-spreadsheet";
 const { functionRegistry } = spreadsheet.registries;
-const { arg, toBoolean, toString, toNumber, toJsDate, formatValue } = spreadsheet.helpers;
+const { arg, toBoolean, toString, toNumber, toJsDate } = spreadsheet.helpers;
 
 const QuarterRegexp = /^q([1-4])\/(\d{4})$/i;
 const MonthRegexp = /^0?([1-9]|1[0-2])\/(\d{4})$/i;
@@ -43,11 +44,11 @@ const MonthRegexp = /^0?([1-9]|1[0-2])\/(\d{4})$/i;
  */
 
 /**
- * @param {string} dateRange
+ * @param {object | undefined} dateRange
  * @returns {QuarterDateRange | undefined}
  */
 function parseAccountingQuarter(dateRange) {
-    const found = dateRange.match(QuarterRegexp);
+    const found = toString(dateRange?.value).trim().match(QuarterRegexp);
     return found
         ? {
               rangeType: "quarter",
@@ -58,11 +59,23 @@ function parseAccountingQuarter(dateRange) {
 }
 
 /**
- * @param {string} dateRange
+ * @param {object | undefined} dateRange
  * @returns {MonthDateRange | undefined}
  */
-function parseAccountingMonth(dateRange) {
-    const found = dateRange.match(MonthRegexp);
+function parseAccountingMonth(dateRange, locale) {
+    if (
+        typeof dateRange?.value === "number" &&
+        dateRange.format?.includes("m") &&
+        !dateRange.format?.includes("d")
+    ) {
+        const date = toJsDate(dateRange.value, locale);
+        return {
+            rangeType: "month",
+            year: date.getFullYear(),
+            month: date.getMonth() + 1,
+        };
+    }
+    const found = toString(dateRange?.value).trim().match(MonthRegexp);
     return found
         ? {
               rangeType: "month",
@@ -73,11 +86,11 @@ function parseAccountingMonth(dateRange) {
 }
 
 /**
- * @param {string} dateRange
+ * @param {object | undefined} dateRange
  * @returns {YearDateRange | undefined}
  */
 function parseAccountingYear(dateRange, locale) {
-    const dateNumber = toNumber(dateRange, locale);
+    const dateNumber = toNumber(dateRange?.value, locale);
     // This allows a bit of flexibility for the user if they were to input a
     // numeric value instead of a year.
     // Users won't need to fetch accounting info for year 3000 before a long time
@@ -90,11 +103,11 @@ function parseAccountingYear(dateRange, locale) {
 }
 
 /**
- * @param {string} dateRange
+ * @param {object | undefined} dateRange
  * @returns {DayDateRange}
  */
 function parseAccountingDay(dateRange, locale) {
-    const dateNumber = toNumber(dateRange, locale);
+    const dateNumber = toNumber(dateRange?.value, locale);
     return {
         rangeType: "day",
         year: functionRegistry.get("YEAR").compute.bind({ locale })(dateNumber),
@@ -104,25 +117,24 @@ function parseAccountingDay(dateRange, locale) {
 }
 
 /**
- * @param {string | number} dateRange
+ * @param {object | undefined} dateRange
  * @returns {DateRange}
  */
 export function parseAccountingDate(dateRange, locale) {
     try {
-        dateRange = toString(dateRange).trim();
         return (
             parseAccountingQuarter(dateRange) ||
-            parseAccountingMonth(dateRange) ||
+            parseAccountingMonth(dateRange, locale) ||
             parseAccountingYear(dateRange, locale) ||
             parseAccountingDay(dateRange, locale)
         );
     } catch {
-        throw new Error(
+        throw new EvaluationError(
             sprintf(
                 _t(
                     `'%s' is not a valid period. Supported formats are "21/12/2022", "Q1/2022", "12/2022", and "2022".`
                 ),
-                dateRange
+                dateRange?.value
             )
         );
     }
@@ -147,36 +159,31 @@ functionRegistry.add("ODOO.CREDIT", {
     args: ODOO_FIN_ARGS(),
     category: "Odoo",
     returns: ["NUMBER"],
-    computeValueAndFormat: function (
+    compute: function (
         accountCodes,
         dateRange,
         offset = { value: 0 },
         companyId = { value: null },
         includeUnposted = { value: false }
     ) {
-        accountCodes = toString(accountCodes?.value)
+        const _accountCodes = toString(accountCodes)
             .split(",")
             .map((code) => code.trim())
             .sort();
-        offset = toNumber(offset.value, this.locale);
-        if (dateRange?.format) {
-            dateRange = { ...dateRange };
-            dateRange.value = formatValue(dateRange.value, {
-                format: dateRange.format,
-                locale: this.locale,
-            });
-        }
-        dateRange = parseAccountingDate(dateRange?.value, this.locale);
-        includeUnposted = toBoolean(includeUnposted.value);
-        const value = this.getters.getAccountPrefixCredit(
-            accountCodes,
-            dateRange,
-            offset,
-            companyId.value,
-            includeUnposted
-        );
-        const format = this.getters.getCompanyCurrencyFormat(companyId.value) || "#,##0.00";
-        return { value, format };
+        const _offset = toNumber(offset, this.locale);
+        const _dateRange = parseAccountingDate(dateRange, this.locale);
+        const _companyId = companyId?.value;
+        const _includeUnposted = toBoolean(includeUnposted);
+        return {
+            value: this.getters.getAccountPrefixCredit(
+                _accountCodes,
+                _dateRange,
+                _offset,
+                _companyId,
+                _includeUnposted
+            ),
+            format: this.getters.getCompanyCurrencyFormat(_companyId) || "#,##0.00",
+        };
     },
 });
 
@@ -185,36 +192,31 @@ functionRegistry.add("ODOO.DEBIT", {
     args: ODOO_FIN_ARGS(),
     category: "Odoo",
     returns: ["NUMBER"],
-    computeValueAndFormat: function (
+    compute: function (
         accountCodes,
         dateRange,
         offset = { value: 0 },
         companyId = { value: null },
         includeUnposted = { value: false }
     ) {
-        accountCodes = toString(accountCodes?.value)
+        const _accountCodes = toString(accountCodes)
             .split(",")
             .map((code) => code.trim())
             .sort();
-        offset = toNumber(offset.value, this.locale);
-        if (dateRange?.format) {
-            dateRange = { ...dateRange };
-            dateRange.value = formatValue(dateRange.value, {
-                format: dateRange.format,
-                locale: this.locale,
-            });
-        }
-        dateRange = parseAccountingDate(dateRange?.value, this.locale);
-        includeUnposted = toBoolean(includeUnposted.value);
-        const value = this.getters.getAccountPrefixDebit(
-            accountCodes,
-            dateRange,
-            offset,
-            companyId.value,
-            includeUnposted
-        );
-        const format = this.getters.getCompanyCurrencyFormat(companyId.value) || "#,##0.00";
-        return { value, format };
+        const _offset = toNumber(offset, this.locale);
+        const _dateRange = parseAccountingDate(dateRange, this.locale);
+        const _companyId = companyId?.value;
+        const _includeUnposted = toBoolean(includeUnposted);
+        return {
+            value: this.getters.getAccountPrefixDebit(
+                _accountCodes,
+                _dateRange,
+                _offset,
+                _companyId,
+                _includeUnposted
+            ),
+            format: this.getters.getCompanyCurrencyFormat(_companyId) || "#,##0.00",
+        };
     },
 });
 
@@ -223,44 +225,37 @@ functionRegistry.add("ODOO.BALANCE", {
     args: ODOO_FIN_ARGS(),
     category: "Odoo",
     returns: ["NUMBER"],
-    computeValueAndFormat: function (
+    compute: function (
         accountCodes,
         dateRange,
         offset = { value: 0 },
         companyId = { value: null },
         includeUnposted = { value: false }
     ) {
-        accountCodes = toString(accountCodes?.value)
+        const _accountCodes = toString(accountCodes)
             .split(",")
             .map((code) => code.trim())
             .sort();
-        offset = toNumber(offset.value, this.locale);
-        if (dateRange?.format) {
-            dateRange = { ...dateRange };
-            dateRange.value = formatValue(dateRange.value, {
-                format: dateRange.format,
-                locale: this.locale,
-            });
-        }
-        dateRange = parseAccountingDate(dateRange?.value, this.locale);
-        includeUnposted = toBoolean(includeUnposted.value);
+        const _offset = toNumber(offset, this.locale);
+        const _dateRange = parseAccountingDate(dateRange, this.locale);
+        const _companyId = companyId?.value;
+        const _includeUnposted = toBoolean(includeUnposted);
         const value =
             this.getters.getAccountPrefixDebit(
-                accountCodes,
-                dateRange,
-                offset,
-                companyId.value,
-                includeUnposted
+                _accountCodes,
+                _dateRange,
+                _offset,
+                _companyId,
+                _includeUnposted
             ) -
             this.getters.getAccountPrefixCredit(
-                accountCodes,
-                dateRange,
-                offset,
-                companyId.value,
-                includeUnposted
+                _accountCodes,
+                _dateRange,
+                _offset,
+                _companyId,
+                _includeUnposted
             );
-        const format = this.getters.getCompanyCurrencyFormat(companyId.value) || "#,##0.00";
-        return { value, format };
+        return { value, format: this.getters.getCompanyCurrencyFormat(_companyId) || "#,##0.00" };
     },
 });
 
@@ -272,15 +267,15 @@ functionRegistry.add("ODOO.FISCALYEAR.START", {
     ],
     category: "Odoo",
     returns: ["NUMBER"],
-    computeFormat: function () {
-        return this.locale.dateFormat;
-    },
-    compute: function (date, companyId = null) {
+    compute: function (date, companyId = { value: null }) {
         const startDate = this.getters.getFiscalStartDate(
             toJsDate(date, this.locale),
-            companyId === null ? null : toNumber(companyId, this.locale)
+            companyId.value === null ? null : toNumber(companyId, this.locale)
         );
-        return toNumber(startDate, this.locale);
+        return {
+            value: toNumber(startDate, this.locale),
+            format: this.locale.dateFormat,
+        };
     },
 });
 
@@ -292,15 +287,15 @@ functionRegistry.add("ODOO.FISCALYEAR.END", {
     ],
     category: "Odoo",
     returns: ["NUMBER"],
-    computeFormat: function () {
-        return this.locale.dateFormat;
-    },
-    compute: function (date, companyId = null) {
+    compute: function (date, companyId = { value: null }) {
         const endDate = this.getters.getFiscalEndDate(
             toJsDate(date, this.locale),
-            companyId === null ? null : toNumber(companyId, this.locale)
+            companyId.value === null ? null : toNumber(companyId, this.locale)
         );
-        return toNumber(endDate, this.locale);
+        return {
+            value: toNumber(endDate, this.locale),
+            format: this.locale.dateFormat,
+        };
     },
 });
 

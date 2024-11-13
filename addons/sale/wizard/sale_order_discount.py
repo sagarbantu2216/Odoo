@@ -24,6 +24,12 @@ class SaleOrderDiscount(models.TransientModel):
         ],
         default='sol_discount',
     )
+    tax_ids = fields.Many2many(
+        string="Taxes",
+        help="Taxes to add on the discount line.",
+        comodel_name='account.tax',
+        domain="[('type_tax_use', '=', 'sale'), ('company_id', '=', company_id)]",
+    )
 
     # CONSTRAINT METHODS #
 
@@ -68,9 +74,21 @@ class SaleOrderDiscount(models.TransientModel):
         self.ensure_one()
         discount_product = self.company_id.sale_discount_product_id
         if not discount_product:
-            self.company_id.sale_discount_product_id = self.env['product.product'].create(
-                self._prepare_discount_product_values()
-            )
+            if (
+                self.env['product.product'].has_access('create')
+                and self.company_id.has_access('write')
+                and self.company_id._filtered_access('write')
+                and self.company_id.check_field_access_rights('write', ['sale_discount_product_id'])
+            ):
+                self.company_id.sale_discount_product_id = self.env['product.product'].create(
+                    self._prepare_discount_product_values()
+                )
+            else:
+                raise ValidationError(_(
+                    "There does not seem to be any discount product configured for this company yet."
+                    " You can either use a per-line discount, or ask an administrator to grant the"
+                    " discount the first time."
+                ))
             discount_product = self.company_id.sale_discount_product_id
         return discount_product
 
@@ -84,7 +102,7 @@ class SaleOrderDiscount(models.TransientModel):
                 self._prepare_discount_line_values(
                     product=discount_product,
                     amount=self.discount_amount,
-                    taxes=self.env['account.tax'],
+                    taxes=self.tax_ids,
                 )
             ]
         else: # so_discount
@@ -93,7 +111,7 @@ class SaleOrderDiscount(models.TransientModel):
                 if not line.product_uom_qty or not line.price_unit:
                     continue
 
-                total_price_per_tax_groups[line.tax_id] += line.price_subtotal
+                total_price_per_tax_groups[line.tax_id] += (line.price_unit * line.product_uom_qty)
 
             if not total_price_per_tax_groups:
                 # No valid lines on which the discount can be applied
@@ -108,7 +126,7 @@ class SaleOrderDiscount(models.TransientModel):
                         amount=subtotal * self.discount_percentage,
                         taxes=taxes,
                         description=_(
-                            "Discount: %(percent)s%%",
+                            "Discount %(percent)s%%",
                             percent=self.discount_percentage*100
                         ),
                     ),
@@ -120,7 +138,7 @@ class SaleOrderDiscount(models.TransientModel):
                         amount=subtotal * self.discount_percentage,
                         taxes=taxes,
                         description=_(
-                            "Discount: %(percent)s%%"
+                            "Discount %(percent)s%%"
                             "- On products with the following taxes %(taxes)s",
                             percent=self.discount_percentage*100,
                             taxes=", ".join(taxes.mapped('name'))

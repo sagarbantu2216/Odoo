@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo.fields import Command
@@ -19,11 +18,13 @@ class SaleCommon(
         super().setUpClass()
 
         cls.env.company.country_id = cls.env.ref('base.us')
-        cls.env.ref('base.main_company').currency_id = cls.env.ref('base.USD')
-        cls.currency = cls.env.ref('base.USD')
 
         # Not defined in product common because only used in sale
-        cls.group_discount_per_so_line = cls.env.ref('product.group_discount_per_so_line')
+        cls.group_discount_per_so_line = cls.env.ref('sale.group_discount_per_so_line')
+
+        (cls.product + cls.service_product).write({
+                'taxes_id': [Command.clear()],
+        })
 
         cls.empty_order = cls.env['sale.order'].create({
             'partner_id': cls.partner.id,
@@ -32,7 +33,7 @@ class SaleCommon(
             'partner_id': cls.partner.id,
             'order_line': [
                 Command.create({
-                    'product_id': cls.consumable_product.id,
+                    'product_id': cls.product.id,
                     'product_uom_qty': 5.0,
                 }),
                 Command.create({
@@ -45,6 +46,10 @@ class SaleCommon(
     @classmethod
     def _enable_pricelists(cls):
         cls.env.user.groups_id += cls.env.ref('product.group_product_pricelist')
+
+    @classmethod
+    def _enable_discounts(cls):
+        cls.env.user.groups_id += cls.group_discount_per_so_line
 
 
 class TestSaleCommonBase(TransactionCase):
@@ -116,6 +121,7 @@ class TestSaleCommonBase(TransactionCase):
                 'invoice_policy': 'delivery',
                 'taxes_id': [(6, 0, [])],
                 'supplier_taxes_id': [(6, 0, [])],
+                'company_id': company.id,
             }),
             'product_service_order': cls.env['product.product'].with_company(company).create({
                 'name': 'product_service_order',
@@ -130,6 +136,7 @@ class TestSaleCommonBase(TransactionCase):
                 'invoice_policy': 'order',
                 'taxes_id': [(6, 0, [])],
                 'supplier_taxes_id': [(6, 0, [])],
+                'company_id': company.id,
             }),
             'product_order_cost': cls.env['product.product'].with_company(company).create({
                 'name': 'product_order_cost',
@@ -145,6 +152,7 @@ class TestSaleCommonBase(TransactionCase):
                 'expense_policy': 'cost',
                 'taxes_id': [(6, 0, [])],
                 'supplier_taxes_id': [(6, 0, [])],
+                'company_id': company.id,
             }),
             'product_delivery_cost': cls.env['product.product'].with_company(company).create({
                 'name': 'product_delivery_cost',
@@ -160,6 +168,7 @@ class TestSaleCommonBase(TransactionCase):
                 'expense_policy': 'cost',
                 'taxes_id': [(6, 0, [])],
                 'supplier_taxes_id': [(6, 0, [])],
+                'company_id': company.id,
             }),
             'product_order_sales_price': cls.env['product.product'].with_company(company).create({
                 'name': 'product_order_sales_price',
@@ -175,6 +184,7 @@ class TestSaleCommonBase(TransactionCase):
                 'expense_policy': 'sales_price',
                 'taxes_id': [(6, 0, [])],
                 'supplier_taxes_id': [(6, 0, [])],
+                'company_id': company.id,
             }),
             'product_delivery_sales_price': cls.env['product.product'].with_company(company).create({
                 'name': 'product_delivery_sales_price',
@@ -190,6 +200,7 @@ class TestSaleCommonBase(TransactionCase):
                 'expense_policy': 'sales_price',
                 'taxes_id': [(6, 0, [])],
                 'supplier_taxes_id': [(6, 0, [])],
+                'company_id': company.id,
             }),
             'product_order_no': cls.env['product.product'].with_company(company).create({
                 'name': 'product_order_no',
@@ -205,6 +216,7 @@ class TestSaleCommonBase(TransactionCase):
                 'expense_policy': 'no',
                 'taxes_id': [(6, 0, [])],
                 'supplier_taxes_id': [(6, 0, [])],
+                'company_id': company.id,
             }),
             'product_delivery_no': cls.env['product.product'].with_company(company).create({
                 'name': 'product_delivery_no',
@@ -220,6 +232,7 @@ class TestSaleCommonBase(TransactionCase):
                 'expense_policy': 'no',
                 'taxes_id': [(6, 0, [])],
                 'supplier_taxes_id': [(6, 0, [])],
+                'company_id': company.id,
             }),
         })
 
@@ -230,8 +243,8 @@ class TestSaleCommon(AccountTestInvoicingCommon, TestSaleCommonBase):
     ''' Setup to be used post-install with sale and accounting test configuration.'''
 
     @classmethod
-    def setup_company_data(cls, company_name, chart_template=None, **kwargs):
-        company_data = super().setup_company_data(company_name, chart_template=chart_template, **kwargs)
+    def collect_company_accounting_data(cls, company):
+        company_data = super().collect_company_accounting_data(company)
 
         company_data.update(cls.setup_sale_configuration_for_company(company_data['company']))
 

@@ -4,7 +4,6 @@ import re
 import base64
 import io
 
-from PyPDF2 import PdfFileReader, PdfFileMerger, PdfFileWriter
 from reportlab.platypus import Frame, Paragraph, KeepInFrame
 from reportlab.lib.units import mm
 from reportlab.lib.pagesizes import A4
@@ -14,6 +13,7 @@ from reportlab.pdfgen.canvas import Canvas
 from odoo import fields, models, api, _
 from odoo.addons.iap.tools import iap_tools
 from odoo.exceptions import AccessError, UserError
+from odoo.tools.pdf import PdfFileReader, PdfFileWriter
 from odoo.tools.safe_eval import safe_eval
 
 DEFAULT_ENDPOINT = 'https://iap-snailmail.odoo.com'
@@ -53,7 +53,7 @@ class SnailmailLetter(models.Model):
         ('pending', 'In Queue'),
         ('sent', 'Sent'),
         ('error', 'Error'),
-        ('canceled', 'Canceled')
+        ('canceled', 'Cancelled')
         ], 'Status', readonly=True, copy=False, default='pending', required=True,
         help="When a letter is created, the status is 'Pending'.\n"
              "If the letter is correctly sent, the status goes in 'Sent',\n"
@@ -155,7 +155,15 @@ class SnailmailLetter(models.Model):
             paperformat = report.get_paperformat()
             if (paperformat.format == 'custom' and paperformat.page_width != 210 and paperformat.page_height != 297) or paperformat.format != 'A4':
                 raise UserError(_("Please use an A4 Paper format."))
+            # The external_report_layout_id is changed just for the snailmail pdf generation if the layout is not supported
+            prev = self.company_id.external_report_layout_id
+            if prev in {
+                self.env.ref(f'web.external_layout_{layout}')
+                for layout in ('bubble', 'wave', 'folder')
+            }:
+                self.company_id.external_report_layout_id = self.env.ref('web.external_layout_standard')
             pdf_bin, unused_filetype = self.env['ir.actions.report'].with_context(snailmail_layout=not self.cover, lang='en_US')._render_qweb_pdf(report, self.res_id)
+            self.company_id.external_report_layout_id = prev
             pdf_bin = self._overwrite_margins(pdf_bin)
             if self.cover:
                 pdf_bin = self._append_cover_page(pdf_bin)
@@ -221,7 +229,6 @@ class SnailmailLetter(models.Model):
         dbuuid = self.env['ir.config_parameter'].sudo().get_param('database.uuid')
         documents = []
 
-        batch = len(self) > 1
         for letter in self:
             recipient_name = letter.partner_id.name or letter.partner_id.parent_id and letter.partner_id.parent_id.name
             if not recipient_name:
@@ -455,8 +462,18 @@ class SnailmailLetter(models.Model):
         required_keys = ['street', 'city', 'zip', 'country_id']
         return all(record[key] for key in required_keys)
 
-    def _append_cover_page(self, invoice_bin: bytes):
+    def _get_cover_address_split(self):
         address_split = self.partner_id.with_context(show_address=True, lang='en_US').display_name.split('\n')
+        if self.country_id.code == 'DE':
+            # Germany requires specific address formatting for Pingen
+            if self.street2:
+                address_split[1] = f'{self.street} // {self.street2}'
+            address_split[2] = f'{self.zip} {self.city}'
+        return address_split
+
+    def _append_cover_page(self, invoice_bin: bytes):
+        out_writer = PdfFileWriter()
+        address_split = self._get_cover_address_split()
         address_split[0] = self.partner_id.name or self.partner_id.parent_id and self.partner_id.parent_id.name or address_split[0]
         address = '<br/>'.join(address_split)
         address_x = 118 * mm
@@ -478,13 +495,16 @@ class SnailmailLetter(models.Model):
         invoice = PdfFileReader(io.BytesIO(invoice_bin))
         cover_bin = io.BytesIO(cover_buf.getvalue())
         cover_file = PdfFileReader(cover_bin)
-        merger = PdfFileMerger()
+        out_writer.appendPagesFromReader(cover_file)
 
-        merger.append(cover_file, import_bookmarks=False)
-        merger.append(invoice, import_bookmarks=False)
+        # Add a blank buffer page to avoid printing behind the cover page
+        if self.duplex:
+            out_writer.addBlankPage()
+
+        out_writer.appendPagesFromReader(invoice)
 
         out_buff = io.BytesIO()
-        merger.write(out_buff)
+        out_writer.write(out_buff)
         return out_buff.getvalue()
 
     def _overwrite_margins(self, invoice_bin: bytes):

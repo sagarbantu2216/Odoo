@@ -10,6 +10,12 @@ import wUtils from '@website/js/utils';
 import { Component } from "@odoo/owl";
 
 export class WebsiteSwitcherSystray extends Component {
+    static template = "website.WebsiteSwitcherSystray";
+    static components = {
+        Dropdown,
+        DropdownItem,
+    };
+    static props = {};
     setup() {
         this.websiteService = useService('website');
         this.notificationService = useService("notification");
@@ -25,7 +31,7 @@ export class WebsiteSwitcherSystray extends Component {
                 if (website.domain && !wUtils.isHTTPSorNakedDomainRedirection(website.domain, window.location.origin)) {
                     const { location: { pathname, search, hash } } = this.websiteService.contentWindow;
                     const path = pathname + search + hash;
-                    window.location.href = `${encodeURI(website.domain)}/web#action=website.website_preview&path=${encodeURIComponent(path)}&website_id=${encodeURIComponent(website.id)}`;
+                    window.location.href = `${encodeURI(website.domain)}/odoo/action-website.website_preview?path=${encodeURIComponent(path)}&website_id=${encodeURIComponent(website.id)}`;
                 } else {
                     this.websiteService.goToWebsite({ websiteId: website.id, path: "", lang: "default" });
                     if (!website.domain) {
@@ -61,15 +67,10 @@ export class WebsiteSwitcherSystray extends Component {
         }));
     }
 }
-WebsiteSwitcherSystray.template = "website.WebsiteSwitcherSystray";
-WebsiteSwitcherSystray.components = {
-    Dropdown,
-    DropdownItem,
-};
 
 export const systrayItem = {
     Component: WebsiteSwitcherSystray,
     isDisplayed: env => env.services.website.hasMultiWebsites,
 };
 
-registry.category("website_systray").add("WebsiteSwitcher", systrayItem, { sequence: 11 });
+registry.category("website_systray").add("WebsiteSwitcher", systrayItem, { sequence: 12 });

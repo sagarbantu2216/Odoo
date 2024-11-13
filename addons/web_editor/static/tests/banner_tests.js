@@ -53,7 +53,7 @@ QUnit.module(
                 resModel: "note",
                 arch:
                     "<form>" +
-                    '<field name="body" widget="html" style="height: 100px"/>' +
+                    '<field name="body" widget="html_legacy" style="height: 100px"/>' +
                     "</form>",
                 resId: 1,
             });
@@ -74,8 +74,8 @@ QUnit.module(
             assert.strictEqual(
                 editable.innerHTML,
                 `<p>Test</p><div class="o_editor_banner o_not_editable lh-1 d-flex align-items-center alert alert-info pb-0 pt-3" role="status" data-oe-protected="true" contenteditable="false">
-                        <i class="fs-4 fa fa-info-circle mb-3" aria-label="Banner Info"></i>
-                        <div class="w-100 ms-3" data-oe-protected="false" contenteditable="true">
+                        <i class="o_editor_banner_icon mb-3 fst-normal" aria-label="Banner Info">💡</i>
+                        <div class="w-100 px-3" data-oe-protected="false" contenteditable="true">
                             <p placeholder=\"Type &quot;/&quot; for commands\" class=\"oe-hint oe-command-temporary-hint\"><br></p>
                         </div>
                     </div><p><br></p>`,
@@ -93,8 +93,8 @@ QUnit.module(
             assert.strictEqual(
                 editable.innerHTML,
                 `<p>Test</p><div class="o_editor_banner o_not_editable lh-1 d-flex align-items-center alert alert-info pb-0 pt-3" role="status" data-oe-protected="true" contenteditable="false">
-                        <i class="fs-4 fa fa-info-circle mb-3" aria-label="Banner Info"></i>
-                        <div class="w-100 ms-3" data-oe-protected="false" contenteditable="true">
+                        <i class="o_editor_banner_icon mb-3 fst-normal" aria-label="Banner Info">💡</i>
+                        <div class="w-100 px-3" data-oe-protected="false" contenteditable="true">
                             <p placeholder=\"Type &quot;/&quot; for commands\" class=\"oe-hint oe-command-temporary-hint\"><br></p>
                         </div>
                     </div><p><br></p>`,
@@ -121,9 +121,10 @@ QUnit.module(
             assert.strictEqual(
                 editable.innerHTML,
                 `<p>Test</p><div class="o_editor_banner o_not_editable lh-1 d-flex align-items-center alert alert-info pb-0 pt-3" role="status" data-oe-protected="true" contenteditable="false">
-                        <i class="fs-4 fa fa-info-circle mb-3" aria-label="Banner Info"></i>
-                        <div class="w-100 ms-3" data-oe-protected="false" contenteditable="true">
-                            <p placeholder=\"Type &quot;/&quot; for commands\" class=\"oe-hint oe-command-temporary-hint\"><br></p></div></div><p><br></p>`,
+                        <i class="o_editor_banner_icon mb-3 fst-normal" aria-label="Banner Info">💡</i>
+                        <div class="w-100 px-3" data-oe-protected="false" contenteditable="true">
+                            <p placeholder=\"Type &quot;/&quot; for commands\" class=\"oe-hint oe-command-temporary-hint\"><br></p></div>
+                    </div><p><br></p>`,
             );
         });
         QUnit.test("First element of o_editable is not editable", async function (assert) {
@@ -141,15 +142,11 @@ QUnit.module(
             triggerEvent(editor.editable, "keydown", { key: "a", ctrlKey: true });
             await nextTick();
             triggerEvent(editor.editable, "input", { inputType: "deleteContentBackward" });
+            await nextTick();
             assert.strictEqual(
                 editable.innerHTML,
-                `<div class="o_editor_banner o_not_editable lh-1 d-flex align-items-center alert alert-info pb-0 pt-3" role="status" data-oe-protected="true" contenteditable="false">
-                        <i class="fs-4 fa fa-info-circle mb-3" aria-label="Banner Info"></i>
-                        <div class="w-100 ms-3" data-oe-protected="false" contenteditable="true">
-                            <p><br></p>
-                        </div>
-                    </div><p placeholder=\"Type &quot;/&quot; for commands\" class=\"oe-hint oe-command-temporary-hint\"><br></p>`,
-                "should not remove banner when ctrl+a and backspace are performed",
+                `<p placeholder=\"Type &quot;/&quot; for commands\" class=\"oe-hint oe-command-temporary-hint\"><br></p>`,
+                "should remove banner when ctrl+a and backspace are performed",
             );
         });
     }

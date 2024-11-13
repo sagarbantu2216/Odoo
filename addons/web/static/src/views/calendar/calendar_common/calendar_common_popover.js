@@ -1,9 +1,8 @@
-/** @odoo-module **/
-
 import { _t } from "@web/core/l10n/translation";
 import { Dialog } from "@web/core/dialog/dialog";
 import { evaluateBooleanExpr } from "@web/core/py_js/py";
 import { is24HourFormat } from "@web/core/l10n/dates";
+import { registry } from "@web/core/registry";
 import { Field } from "@web/views/fields/field";
 import { Record } from "@web/model/record";
 import { getFormattedDateSpan } from "@web/views/calendar/utils";
@@ -11,6 +10,26 @@ import { getFormattedDateSpan } from "@web/views/calendar/utils";
 import { Component, useExternalListener } from "@odoo/owl";
 
 export class CalendarCommonPopover extends Component {
+    static template = "web.CalendarCommonPopover";
+    static subTemplates = {
+        popover: "web.CalendarCommonPopover.popover",
+        body: "web.CalendarCommonPopover.body",
+        footer: "web.CalendarCommonPopover.footer",
+    };
+    static components = {
+        Dialog,
+        Field,
+        Record,
+    };
+    static props = {
+        close: Function,
+        record: Object,
+        model: Object,
+        createRecord: Function,
+        deleteRecord: Function,
+        editRecord: Function,
+    };
+
     setup() {
         this.time = null;
         this.timeDuration = null;
@@ -37,6 +56,19 @@ export class CalendarCommonPopover extends Component {
 
     isInvisible(fieldNode, record) {
         return evaluateBooleanExpr(fieldNode.invisible, record.evalContextWithVirtualIds);
+    }
+
+    getFormattedValue(fieldName, record) {
+        const fieldInfo = this.props.model.popoverFieldNodes[fieldName];
+        const field = this.props.model.fields[fieldName];
+        let format;
+        const formattersRegistry = registry.category("formatters");
+        if (fieldInfo.widget && formattersRegistry.contains(fieldInfo.widget)) {
+            format = formattersRegistry.get(fieldInfo.widget);
+        } else {
+            format = formattersRegistry.get(field.type);
+        }
+        return format(record.data[fieldName]);
     }
 
     computeDateTimeAndDuration() {
@@ -84,22 +116,3 @@ export class CalendarCommonPopover extends Component {
         this.props.close();
     }
 }
-CalendarCommonPopover.components = {
-    Dialog,
-    Field,
-    Record,
-};
-CalendarCommonPopover.template = "web.CalendarCommonPopover";
-CalendarCommonPopover.subTemplates = {
-    popover: "web.CalendarCommonPopover.popover",
-    body: "web.CalendarCommonPopover.body",
-    footer: "web.CalendarCommonPopover.footer",
-};
-CalendarCommonPopover.props = {
-    close: Function,
-    record: Object,
-    model: Object,
-    createRecord: Function,
-    deleteRecord: Function,
-    editRecord: Function,
-};

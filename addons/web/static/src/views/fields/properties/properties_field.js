@@ -1,22 +1,22 @@
-/** @odoo-module **/
-
-import { _t } from "@web/core/l10n/translation";
-import { registry } from "@web/core/registry";
-import { standardFieldProps } from "../standard_field_props";
-import { uuid } from "../../utils";
-import { PropertyDefinition } from "./property_definition";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
-import { PropertyValue } from "./property_value";
-import { useBus, useService } from "@web/core/utils/hooks";
+import { _t } from "@web/core/l10n/translation";
 import { usePopover } from "@web/core/popover/popover_hook";
-import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
-import { reposition } from "@web/core/position_hook";
-import { archParseBoolean } from "@web/views/utils";
+import { reposition } from "@web/core/position/utils";
+import { registry } from "@web/core/registry";
+import { user } from "@web/core/user";
+import { useBus, useService } from "@web/core/utils/hooks";
 import { pick } from "@web/core/utils/objects";
 import { useSortable } from "@web/core/utils/sortable_owl";
+import { exprToBoolean } from "@web/core/utils/strings";
+import { useRecordObserver } from "@web/model/relational_model/utils";
+import { uuid } from "../../utils";
+import { standardFieldProps } from "../standard_field_props";
+import { PropertyDefinition } from "./property_definition";
+import { PropertyValue } from "./property_value";
 
-import { Component, useRef, useState, useEffect, onWillStart } from "@odoo/owl";
+import { Component, onWillStart, useEffect, useRef, useState } from "@odoo/owl";
 
 export class PropertiesField extends Component {
     static template = "web.PropertiesField";
@@ -36,7 +36,6 @@ export class PropertiesField extends Component {
     setup() {
         this.notification = useService("notification");
         this.orm = useService("orm");
-        this.user = useService("user");
         this.dialogService = useService("dialog");
         this.popover = usePopover(PropertyDefinition, {
             closeOnClickAway: this.checkPopoverClose,
@@ -48,7 +47,13 @@ export class PropertiesField extends Component {
         });
         this.propertiesRef = useRef("properties");
 
-        this._saveInitialPropertiesValues();
+        let currentResId;
+        useRecordObserver((record) => {
+            if (currentResId !== record.resId) {
+                currentResId = record.resId;
+                this._saveInitialPropertiesValues();
+            }
+        });
 
         const field = this.props.record.fields[this.props.name];
         this.definitionRecordField = field.definition_record;
@@ -562,9 +567,8 @@ export class PropertiesField extends Component {
         const dialogProps = {
             title: _t("Delete Property Field"),
             body: _t(
-                'Are you sure you want to delete this property field? It will be removed for everyone using the "%s" %s.',
-                this.parentName,
-                this.parentString
+                'Are you sure you want to delete this property field? It will be removed for everyone using the "%(parentName)s" %(parentFieldLabel)s.',
+                { parentName: this.parentName, parentFieldLabel: this.parentString }
             ),
             confirmLabel: _t("Delete"),
             confirm: () => {
@@ -580,7 +584,7 @@ export class PropertiesField extends Component {
     }
 
     async onPropertyCreate() {
-        if (!(await this.checkDefinitionWriteAccess())) {
+        if (!this.state.canChangeDefinition || !(await this.checkDefinitionWriteAccess())) {
             this.notification.add(
                 _t("You need edit access on the parent document to update these property fields"),
                 { type: "warning" }
@@ -641,17 +645,11 @@ export class PropertiesField extends Component {
             return false;
         }
 
-        try {
-            await this.orm.call(
-                this.definitionRecordModel,
-                "check_access_rule",
-                [this.definitionRecordId],
-                { operation: "write" }
-            );
-        } catch {
-            return false;
-        }
-        return true;
+        return await user.checkAccessRight(
+            this.definitionRecordModel,
+            "write",
+            this.definitionRecordId
+        );
     }
 
     /**
@@ -769,7 +767,7 @@ export class PropertiesField extends Component {
         }
 
         // check if we can write on the definition record
-        this.state.canChangeDefinition = await this.user.checkAccessRight(
+        this.state.canChangeDefinition = await user.checkAccessRight(
             this.definitionRecordModel,
             "write"
         );
@@ -940,7 +938,7 @@ export const propertiesField = {
         return {
             context: dynamicInfo.context,
             columns: parseInt(attrs.columns || "1"),
-            showAddButton: archParseBoolean(attrs.showAddButton),
+            showAddButton: exprToBoolean(attrs.showAddButton),
         };
     },
 };

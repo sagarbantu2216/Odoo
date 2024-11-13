@@ -1,7 +1,8 @@
 /** @odoo-module **/
 
 import { loadBundle } from "@web/core/assets";
-import { attachComponent } from '@web/legacy/utils';
+import { ensureJQuery } from "@web/core/ensure_jquery";
+import { attachComponent } from "@web_editor/js/core/owl_utils";
 
 export async function loadWysiwygFromTextarea(parent, textarea, options) {
     var loading = textarea.nextElementSibling;
@@ -15,6 +16,7 @@ export async function loadWysiwygFromTextarea(parent, textarea, options) {
         currentOptions.value = '<p><br></p>';
     }
 
+    await ensureJQuery();
     await loadBundle("web_editor.assets_wysiwyg");
     const { Wysiwyg } = await odoo.loader.modules.get('@web_editor/js/wysiwyg/wysiwyg');
     let wysiwyg;
@@ -57,7 +59,7 @@ export async function loadWysiwygFromTextarea(parent, textarea, options) {
             $form.find('.note-editable').find('img.o_we_selected_image').removeClass('o_we_selected_image');
             // float-start class messes up the post layout OPW 769721
             $form.find('.note-editable').find('img.float-start').removeClass('float-start');
-            $textarea.html(wysiwyg.getValue());
+            $textarea.val(wysiwyg.getValue());
         }
     });
 

@@ -1,5 +1,3 @@
-/* @odoo-module */
-
 import { Domain } from "@web/core/domain";
 import { DataPoint } from "./datapoint";
 
@@ -67,7 +65,7 @@ export class Group extends DataPoint {
     }
 
     async addNewRecord(_unused, atFirstPosition = false) {
-        const canProceed = await this.model.root.leaveEditMode({ discard: true });
+        const canProceed = await this.model.root.leaveEditMode();
         if (canProceed) {
             const record = await this.list.addNewRecord(atFirstPosition);
             if (record) {
@@ -83,6 +81,7 @@ export class Group extends DataPoint {
             });
         } else {
             await this.list.load({ domain: this.groupDomain });
+            this.count = this.list.isGrouped ? this.list.recordCount : this.list.count;
         }
         this.model._updateConfig(this.config, { extraDomain: filter }, { reload: false });
     }
@@ -118,7 +117,7 @@ export class Group extends DataPoint {
 
     async _removeRecords(recordIds) {
         const idsToRemove = recordIds.filter((id) => this.list.records.some((r) => r.id === id));
-        await this.list._removeRecords(idsToRemove);
+        this.list._removeRecords(idsToRemove);
         this.count -= idsToRemove.length;
     }
 }

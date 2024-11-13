@@ -80,6 +80,7 @@ class SaleOrderLine(models.Model):
         for line in res:
             if line.coupon_id and line.points_cost and line.state == 'sale':
                 line.coupon_id.points -= line.points_cost
+                line.order_id._update_loyalty_history(line.coupon_id, line.points_cost)
         return res
 
     def write(self, vals):
@@ -120,3 +121,6 @@ class SaleOrderLine(models.Model):
         res = super(SaleOrderLine, self | related_lines).unlink()
         coupons_to_unlink.sudo().unlink()
         return res
+
+    def _sellable_lines_domain(self):
+        return super()._sellable_lines_domain() + [('reward_id', '=', False)]

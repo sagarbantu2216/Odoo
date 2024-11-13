@@ -55,7 +55,7 @@ class TestMessagePostCommon(MailCommon, TestRecipients):
             'body': '<p>Notify Body <span>Woop Woop</span></p>',
             'email_from': cls.partner_employee.email_formatted,
             'is_internal': False,
-            'message_id': tools.generate_tracking_message_id('dummy-generate'),
+            'message_id': tools.mail.generate_tracking_message_id('dummy-generate'),
             'message_type': 'comment',
             'model': cls.test_record._name,
             'record_name': False,
@@ -724,6 +724,27 @@ class TestMessagePost(TestMessagePostCommon, CronMixinCase):
         self.assertFalse(self.test_record.message_follower_ids)
         self.assertFalse(self.test_record.message_partner_ids)
 
+    @mute_logger('odoo.addons.mail.models.mail_mail')
+    def test_manual_send_user_notification_email_from_queue(self):
+        """ Test sending a mail from the queue that is not related to the admin user sending it.
+        Will throw a security error not having access to the mail."""
+
+        with self.mock_mail_gateway():
+            new_notification = self.test_record.message_notify(
+                subject='This should be a subject',
+                body='<p>You have received a notification</p>',
+                partner_ids=[self.partner_1.id],
+                subtype_xmlid='mail.mt_note',
+                force_send=False
+            )
+
+        self.assertNotIn(self.user_admin.partner_id, new_notification.mail_ids.partner_ids, "Our admin user should not be within the partner_ids")
+
+        with self.mock_mail_gateway():
+            new_notification.mail_ids.with_user(self.user_admin).send()
+
+        self.assertEqual(new_notification.mail_ids.state, 'exception', 'Email will be sent but with exception state - write access denied')
+
     @mute_logger('odoo.addons.mail.models.mail_mail', 'odoo.models.unlink')
     @users('employee')
     def test_message_post(self):
@@ -1172,9 +1193,10 @@ class TestMessagePost(TestMessagePostCommon, CronMixinCase):
         Test the message_main_attachment heuristics with an emphasis on the XML/Octet/PDF types.
         -> we don't want XML nor Octet-Stream files to be set as message_main_attachment
         """
-        xml_attachment, octet_attachment, pdf_attachment = [('List1', b'My xml attachment')], \
-                                                           [('List2', b'My octet-stream attachment')], \
-                                                           [('List3', b'My pdf attachment')]
+        xml_attachment, octet_attachment, pdf_attachment = (
+            [('List1', b'<xml>My xml attachment</xml>')],
+            [('List2', b'\x00\x01My octet-stream attachment\x03\x04')],
+            [('List3', b'%PDF My pdf attachment')])
 
         xml_attachment_data, octet_attachment_data, pdf_attachment_data = self.env['ir.attachment'].create(
             self._generate_attachments_data(3, 'mail.compose.message', 0)
@@ -1284,8 +1306,8 @@ class TestMessagePost(TestMessagePostCommon, CronMixinCase):
         self.assertEqual(len(self._mails), 1)
         self.assertSentEmail(
             self.user_employee.partner_id, [self.partner_1],
-            attachments=[('List1', b'My first attachment', 'application/octet-stream'),
-                         ('List2', b'My second attachment', 'application/octet-stream'),
+            attachments=[('List1', b'My first attachment', 'text/plain'),
+                         ('List2', b'My second attachment', 'text/plain'),
                          ('AttFileName_00.txt', b'AttContent_00', 'text/plain'),
                          ('AttFileName_01.txt', b'AttContent_01', 'image/png'),
                          ('AttFileName_02.txt', b'AttContent_02', 'text/plain'),
@@ -1311,7 +1333,7 @@ class TestMessagePost(TestMessagePostCommon, CronMixinCase):
                     {'partner': self.partner_employee, 'type': 'inbox'},
                     {'partner': self.partner_1, 'type': 'email'}]}
                 ]
-            ), patch.object(MailTestSimple, 'check_access_rights', return_value=True):
+            ), patch.object(MailTestSimple, '_check_access', return_value=None):
             new_msg = self.test_record.with_user(self.user_portal).message_post(
                 body=Markup('<p>Test</p>'),
                 message_type='comment',

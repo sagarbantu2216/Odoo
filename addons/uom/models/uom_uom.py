@@ -24,7 +24,7 @@ class UoMCategory(models.Model):
             self.uom_ids[0].factor = 1
         else:
             reference_count = sum(uom.uom_type == 'reference' for uom in self.uom_ids)
-            if reference_count == 0 and self._origin.id:
+            if reference_count == 0 and self._origin.id and self.uom_ids:
                 raise UserError(_('UoM category %s must have at least one reference unit of measure.', self.name))
             if self.reference_uom_id:
                 new_reference = self.uom_ids.filtered(lambda o: o.uom_type == 'reference' and o._origin.id != self.reference_uom_id.id)
@@ -223,8 +223,8 @@ class UoM(models.Model):
         if self != to_unit and self.category_id.id != to_unit.category_id.id:
             if raise_if_failure:
                 raise UserError(_(
-                    'The unit of measure %s defined on the order line doesn\'t belong to the same category as the unit of measure %s defined on the product. Please correct the unit of measure defined on the order line or on the product, they should belong to the same category.',
-                    self.name, to_unit.name))
+                    'The unit of measure %(unit)s defined on the order line doesn\'t belong to the same category as the unit of measure %(product_unit)s defined on the product. Please correct the unit of measure defined on the order line or on the product. They should belong to the same category.',
+                    unit=self.name, product_unit=to_unit.name))
             else:
                 return qty
 

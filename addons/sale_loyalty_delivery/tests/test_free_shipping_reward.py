@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import Command
-from odoo.addons.sale_loyalty.tests.common import TestSaleCouponCommon
+from odoo.fields import Command
 from odoo.tests import Form, tagged
+
+from odoo.addons.sale_loyalty.tests.common import TestSaleCouponCommon
 
 
 @tagged('post_install', '-at_install')
@@ -12,6 +12,7 @@ class TestSaleCouponProgramRules(TestSaleCouponCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+
         cls.iPadMini = cls.env['product.product'].create({'name': 'Large Cabinet', 'list_price': 320.0})
         tax_15pc_excl = cls.env['account.tax'].create({
             'name': "15% Tax excl",
@@ -70,9 +71,7 @@ class TestSaleCouponProgramRules(TestSaleCouponCommon):
             })],
         })
 
-        order = self.env['sale.order'].create({
-            'partner_id': self.steve.id,
-        })
+        order = self.empty_order
 
         # Price of order will be 5*1.15 = 5.75 (tax included)
         order.write({'order_line': [
@@ -302,22 +301,20 @@ class TestSaleCouponProgramRules(TestSaleCouponCommon):
             })],
         })
         # Add points to a partner to trigger the promotion
-        loyalty_card = self.env['loyalty.card'].create({
+        self.env['loyalty.card'].create({
             'program_id': loyalty_program.id,
-            'partner_id': self.steve.id,
+            'partner_id': self.partner.id,
             'points': 250,
         })
-        order = self.env['sale.order'].create({
-            'partner_id': self.steve.id,
-        })
+        order = self.empty_order
         # Check if we can claim the free shipping reward
         order._update_programs_and_rewards()
         claimable_rewards = order._get_claimable_rewards()
         self.assertEqual(len(claimable_rewards), 1)
         # Try to apply the loyalty card to the sale order
-        self._apply_promo_code(order, loyalty_card.code)
+        self.assertTrue(self._claim_reward(order, loyalty_program))
         # Check if there is an error in the sequence
-        # via `_apply_program_reward` in `apply_promo_code` method
+        # via `_apply_program_reward` in `_claim_reward` method
 
     def test_nothing_delivered_nothing_to_invoice(self):
         program = self.env['loyalty.program'].create({
@@ -449,3 +446,43 @@ class TestSaleCouponProgramRules(TestSaleCouponCommon):
         self._auto_rewards(order, programs)
         self.assertEqual(len(order.order_line.ids), 2, "We should loose the free delivery reward since we are above 872.73$")
         self.assertEqual(order.reward_amount, 0)
+
+    def test_discount_reward_claimable_when_shipping_reward_already_claimed_from_same_coupon(self):
+        """
+        Check that a discount reward is still claimable after the shipping reward is claimed.
+        """
+        program = self.env['loyalty.program'].create({
+            'name': "10% Discount & Shipping",
+            'applies_on': 'current',
+            'trigger': 'with_code',
+            'program_type': 'promotion',
+            'rule_ids': [Command.create({'mode': 'with_code', 'code': "10PERCENT&SHIPPING"})],
+            'reward_ids': [
+                Command.create({
+                    'reward_type': 'shipping',
+                    'reward_product_qty': 1,
+                }),
+                Command.create({
+                    'reward_type': 'discount',
+                    'discount': 10,
+                    'discount_mode': 'percent',
+                    'discount_applicability': 'specific',
+                }),
+            ],
+        })
+
+        coupon = self.env['loyalty.card'].create({
+            'program_id': program.id, 'points': 20, 'code': 'GIFT_CARD'
+        })
+
+        order = self.env['sale.order'].create({
+            'partner_id': self.partner.id,
+            'order_line': [Command.create({'product_id': self.product_B.id})]
+        })
+
+        ship_reward = program.reward_ids.filtered(lambda reward: reward.reward_type == 'shipping')
+        discount_reward = program.reward_ids - ship_reward
+        order._apply_program_reward(ship_reward, coupon)
+        rewards = order._get_claimable_rewards()[coupon]
+        msg = "The discount reward should still be applicable as only the shipping one was claimed."
+        self.assertEqual(rewards, discount_reward, msg)
