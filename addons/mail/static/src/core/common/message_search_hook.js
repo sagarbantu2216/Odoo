@@ -1,5 +1,3 @@
-/* @odoo-module */
-
 import { useSequential } from "@mail/utils/common/hooks";
 import { useState, onWillUnmount, markup } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
@@ -21,7 +19,7 @@ export function searchHighlight(searchTerm, target) {
         // Special handling for '
         // Note: browsers use XPath 1.0, so uses concat() rather than ||
         const split = term.toLowerCase().split("'");
-        let lowercase = split.map(s => `'${s}'`).join(', "\'", ');
+        let lowercase = split.map((s) => `'${s}'`).join(', "\'", ');
         let uppercase = lowercase.toUpperCase();
         if (split.length > 1) {
             lowercase = `concat(${lowercase})`;
@@ -63,18 +61,22 @@ export function searchHighlight(searchTerm, target) {
     return markup(htmlDoc.body.innerHTML);
 }
 
-/** @param {import('@mail/core/common/thread_model').Thread} thread */
+/** @param {import('models').Thread} thread */
 export function useMessageSearch(thread) {
-    const threadService = useService("mail.thread");
+    const store = useService("mail.store");
     const sequential = useSequential();
     const state = useState({
         thread,
         async search(before = false) {
             if (this.searchTerm) {
                 this.searching = true;
-                const { count, loadMore, messages } = await sequential(() =>
-                    threadService.search(this.searchTerm, this.thread, before)
+                const data = await sequential(() =>
+                    store.search(this.searchTerm, this.thread, before)
                 );
+                if (!data) {
+                    return;
+                }
+                const { count, loadMore, messages } = data;
                 this.searched = true;
                 this.searching = false;
                 this.count = count;

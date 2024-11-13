@@ -3,16 +3,16 @@
 # 	* mail_group
 # 
 # Translators:
-# Wil Odoo, 2023
-# Jolien De Paepe, 2024
+# Manon Rondou, 2024
+# Wil Odoo, 2024
 # Erwin van der Ploeg <erwin@odooexperts.nl>, 2024
 # 
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0\n"
+"Project-Id-Version: Odoo Server 18.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 21:55+0000\n"
-"PO-Revision-Date: 2023-10-26 23:09+0000\n"
+"POT-Creation-Date: 2024-09-26 08:55+0000\n"
+"PO-Revision-Date: 2024-09-25 09:41+0000\n"
 "Last-Translator: Erwin van der Ploeg <erwin@odooexperts.nl>, 2024\n"
 "Language-Team: Dutch (https://app.transifex.com/odoo/teams/41243/nl/)\n"
 "MIME-Version: 1.0\n"
@@ -89,7 +89,7 @@ msgid ""
 msgstr ""
 "<div>\n"
 "                <p>Hallo <t t-out=\"object.partner_id.name or ''\"></t>,</p>\n"
-"                <p>Hieronder vindt u de richtlijnen van de <t t-out=\"object.mail_group_id.name\"></t> mailing lijst.</p>\n"
+"                <p>Hieronder vind je de richtlijnen van de <t t-out=\"object.mail_group_id.name\"></t> mailing lijst.</p>\n"
 "                <p><t t-out=\"object.mail_group_id.moderation_guidelines_msg or ''\"></t></p>\n"
 "            </div>\n"
 "        "
@@ -317,7 +317,6 @@ msgstr "Altijd toestaan"
 #. module: mail_group
 #. odoo-javascript
 #: code:addons/mail_group/static/src/js/mail_group.js:0
-#, python-format
 msgid "An email with instructions has been sent."
 msgstr "Er is een e-mail met instructies verzonden."
 
@@ -509,7 +508,6 @@ msgstr "E-mail"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Email %s is invalid"
 msgstr "E-mail %s is ongeldig"
 
@@ -533,6 +531,11 @@ msgstr ""
 "E-mailadres van de verzender. Dit veld is ingesteld wanneer er geen "
 "overeenkomende relatie wordt gevonden en vervangt het author_id veld in de "
 "chatter."
+
+#. module: mail_group
+#: model:ir.model.fields,help:mail_group.field_mail_group__alias_domain
+msgid "Email domain e.g. 'example.com' in 'odoo@example.com'"
+msgstr "E-maildomein bijv. 'example.com' in 'odoo@example.com'"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_view_form
@@ -588,7 +591,6 @@ msgstr "Groepsnaam"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "Group message can only be linked to mail group. Current model is %s."
 msgstr ""
 "Groepsbericht kan alleen worden gekoppeld aan mailgroep. Huidig model is %s."
@@ -644,18 +646,14 @@ msgstr "Afbeelding"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Invalid action for URL generation (%s)"
 msgstr "Ongeldige actie voor genereren van URL (%s)"
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_moderation.py:0
-#: code:addons/mail_group/models/mail_group_moderation.py:0
-#, python-format
-msgid "Invalid email address %r"
-msgstr "Ongeldig e-mailadres %r"
+msgid "Invalid email address “%s”"
+msgstr "Ongeldig e-mailadres “%s”"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.invalid_token_subscription
@@ -857,7 +855,6 @@ msgstr "Berichten per maand"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Messages are pending moderation"
 msgstr "Berichten wachten op moderatie"
 
@@ -905,7 +902,6 @@ msgstr "Gemodereerde e-mails in deze groep"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Moderated group must have moderators."
 msgstr "Gemodereerde groep moet moderators hebben."
 
@@ -944,7 +940,6 @@ msgstr "Moderators"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Moderators must have an email address."
 msgstr "Moderators moeten een e-mailadres hebben."
 
@@ -1012,7 +1007,6 @@ msgstr "Aantal berichten in deze groep"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid ""
 "Only an administrator or a moderator can send guidelines to group members."
 msgstr ""
@@ -1022,9 +1016,16 @@ msgstr ""
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Only members can send email to the mailing list."
 msgstr "Alleen leden kunnen e-mail naar de mailinglijst sturen."
+
+#. module: mail_group
+#. odoo-python
+#: code:addons/mail_group/models/mail_group.py:0
+msgid "Only selected groups of users can send email to the mailing list."
+msgstr ""
+"Alleen geselecteerde groepen gebruikers kunnen een e-mail naar de "
+"mailinglijst sturen."
 
 #. module: mail_group
 #: model:ir.model.fields,help:mail_group.field_mail_group__alias_force_thread_id
@@ -1137,7 +1138,6 @@ msgstr "Openbare mailinglijst"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/wizard/mail_group_message_reject.py:0
-#, python-format
 msgid "Re: %s"
 msgstr "Re: %s"
 
@@ -1285,9 +1285,7 @@ msgstr "Onderwerp"
 #. module: mail_group
 #. odoo-javascript
 #: code:addons/mail_group/static/src/js/mail_group.js:0
-#: code:addons/mail_group/static/src/js/mail_group.js:0
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_groups
-#, python-format
 msgid "Subscribe"
 msgstr "Inschrijven"
 
@@ -1299,7 +1297,6 @@ msgstr "Inschrijvingsbevestiging voor een mailinggroep"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid ""
 "Template \"mail_group.mail_template_guidelines\" was not found. No email has"
 " been sent. Please contact an administrator to fix this issue."
@@ -1316,7 +1313,6 @@ msgstr "Dank je!"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The \"Authorized Group\" is missing."
 msgstr "De \"Geautoriseerde groep\" ontbreekt."
 
@@ -1328,28 +1324,24 @@ msgstr "De e-mail"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "The email \"%s\" is not valid."
 msgstr "Het e-mailadres \"%s\" is niet geldig."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The group of the message do not match."
 msgstr "De groep van het bericht komt niet overeen."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The guidelines description is empty."
 msgstr "De beschrijving van de richtlijnen is leeg."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The guidelines description is missing."
 msgstr "De beschrijving van de richtlijnen ontbreekt."
 
@@ -1376,42 +1368,36 @@ msgstr ""
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The notification message is missing."
 msgstr "Het meldingsbericht ontbreekt."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The partner can not be found."
 msgstr "De relatie kan niet worden gevonden."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "The record of the message should be the group."
 msgstr "Het record van het bericht moet de groep zijn."
 
 #. module: mail_group
 #. odoo-javascript
 #: code:addons/mail_group/static/src/js/mail_group.js:0
-#, python-format
 msgid "This email is already subscribed."
 msgstr "Deze e-mail is al geabonneerd."
 
 #. module: mail_group
 #. odoo-javascript
 #: code:addons/mail_group/static/src/js/mail_group.js:0
-#, python-format
 msgid "This email is not subscribed."
 msgstr "Deze e-mail is niet geabonneerd."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "This message can not be moderated"
 msgstr "Dit bericht kan niet worden gemodereerd"
 
@@ -1423,7 +1409,6 @@ msgstr "Deze relatie is al geabonneerd op de groep"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "Those messages can not be moderated: %s."
 msgstr "Die berichten kunnen niet worden gemodereerd: %s."
 
@@ -1435,9 +1420,7 @@ msgstr "Beoordelen"
 #. module: mail_group
 #. odoo-javascript
 #: code:addons/mail_group/static/src/js/mail_group.js:0
-#: code:addons/mail_group/static/src/js/mail_group.js:0
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_groups
-#, python-format
 msgid "Unsubscribe"
 msgstr "Afmelden"
 
@@ -1468,7 +1451,6 @@ msgstr "Witte lijst"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "Wrong status (%s)"
 msgstr "Verkeerde status (%s)"
 
@@ -1487,6 +1469,11 @@ msgstr "Je hebt berichten om te modereren, ga alsjeblieft voor de procedure."
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_footer
 msgid "_______________________________________________"
 msgstr "_______________________________________________________________"
+
+#. module: mail_group
+#: model_terms:ir.ui.view,arch_db:mail_group.mail_group_view_form
+msgid "alias"
+msgstr "alias"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_message_reject_form
@@ -1510,8 +1497,8 @@ msgstr "bijv. \"Nieuwsbrief\""
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_view_form
-msgid "e.g. domain.com"
-msgstr "bijv. domain.com"
+msgid "e.g. mycompany.com"
+msgstr "bijv. mycompany.com"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_message_view_search

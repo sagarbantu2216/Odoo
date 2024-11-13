@@ -1,10 +1,10 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 {
     'name': 'Sweden - Accounting',
-    'website': 'https://www.odoo.com/documentation/17.0/applications/finance/fiscal_localizations.html',
+    'website': 'https://www.odoo.com/documentation/master/applications/finance/fiscal_localizations.html',
     'icon': '/account/static/description/l10n.png',
     'countries': ['se'],
-    'version': '1.0',
+    'version': '1.1',
     'author': 'XCLUDE, Odoo S.A.',
     'category': 'Accounting/Localizations/Account Charts',
     'description': """
@@ -18,6 +18,7 @@ It also includes the invoice OCR payment reference handling.
         'account',
         'base_vat',
     ],
+    'auto_install': ['account'],
     'data': [
         'data/account.account.tag.csv',
         'data/account_tax_report_data.xml',

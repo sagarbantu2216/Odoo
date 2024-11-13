@@ -4,13 +4,13 @@ from odoo import Command
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 
 import datetime
-from unittest import mock
 
 
 class L10nHuEdiTestCommon(AccountTestInvoicingCommon):
     @classmethod
-    def setUpClass(cls, chart_template_ref='hu'):
-        super().setUpClass(chart_template_ref=chart_template_ref)
+    @AccountTestInvoicingCommon.setup_country('hu')
+    def setUpClass(cls):
+        super().setUpClass()
 
         cls.today = datetime.date.today()
 
@@ -51,6 +51,7 @@ class L10nHuEdiTestCommon(AccountTestInvoicingCommon):
             'zip': '4000',
             'country_id': cls.env.ref('base.hu').id,
             'vat': '14933477-2-13',
+            'invoice_edi_format': False,
         })
         cls.partner_group_company_1 = cls.env['res.partner'].create({
             'name': 'MOL Nyrt.',
@@ -103,7 +104,7 @@ class L10nHuEdiTestCommon(AccountTestInvoicingCommon):
             'amount': 30.0,
             'country_id': company.account_fiscal_country_id.id,
             'tax_exigibility': 'on_invoice',
-            'price_include': True,
+            'price_include_override': 'tax_included',
             'include_base_amount': True,
             'invoice_repartition_line_ids': [
                 Command.create({'repartition_type': 'base'}),
@@ -124,14 +125,13 @@ class L10nHuEdiTestCommon(AccountTestInvoicingCommon):
     @classmethod
     def write_edi_credentials(cls):
         # Set up test EDI user
-        with mock.patch.object(type(cls.env['res.company']), '_l10n_hu_edi_test_credentials', autospec=True):
-            return cls.company_data['company'].write({
-                'l10n_hu_edi_server_mode': 'test',
-                'l10n_hu_edi_username': 'this',
-                'l10n_hu_edi_password': 'that',
-                'l10n_hu_edi_signature_key': 'some_key',
-                'l10n_hu_edi_replacement_key': 'abcdefghijklmnop',
-            })
+        return cls.company_data['company'].write({
+            'l10n_hu_edi_server_mode': 'test',
+            'l10n_hu_edi_username': 'this',
+            'l10n_hu_edi_password': 'that',
+            'l10n_hu_edi_signature_key': 'some_key',
+            'l10n_hu_edi_replacement_key': 'abcdefghijklmnop',
+        })
 
     def create_invoice_simple(self):
         """ Create a really basic invoice - just one line. """
@@ -153,7 +153,7 @@ class L10nHuEdiTestCommon(AccountTestInvoicingCommon):
         })
 
     def create_advance_invoice(self):
-        """ Create a sale order, an advance invoice and a final invoice. """
+        """ Create a sale order and an advance invoice. """
         self.product_a.invoice_policy = 'order'
         pricelist_huf = self.env['product.pricelist'].create({
             'name': 'HUF pricelist',
@@ -174,28 +174,33 @@ class L10nHuEdiTestCommon(AccountTestInvoicingCommon):
         })
         sale_order.action_confirm()
 
-        context = {
+        downpayment = self.env['sale.advance.payment.inv'].with_context({
             'active_model': 'sale.order',
             'active_ids': [sale_order.id],
             'active_id': sale_order.id,
             'default_journal_id': self.company_data['default_journal_sale'].id,
-        }
-
-        downpayment_1 = self.env['sale.advance.payment.inv'].with_context(context).create({
+        }).create({
             'advance_payment_method': 'fixed',
             'fixed_amount': 6350.0,
-            'deposit_account_id': self.company_data['default_account_revenue'].id,
         })
-        downpayment_1.create_invoices()
-        advance_invoice = sale_order.invoice_ids
+        downpayment.create_invoices()
+        return sale_order, sale_order.invoice_ids
 
-        downpayment_2 = self.env['sale.advance.payment.inv'].with_context(context).create({
+    def create_final_invoice(self, sale_order):
+        """ Create a final invoice for a sale order """
+        advance_invoice = sale_order.invoice_ids
+        final_payment = self.env['sale.advance.payment.inv'].with_context({
+            'active_model': 'sale.order',
+            'active_ids': [sale_order.id],
+            'active_id': sale_order.id,
+            'default_journal_id': self.company_data['default_journal_sale'].id,
+        }).create({
             'advance_payment_method': 'delivered',
         })
-        downpayment_2.create_invoices()
+        final_payment.create_invoices()
         final_invoice = sale_order.invoice_ids - advance_invoice
 
-        return advance_invoice, final_invoice
+        return final_invoice
 
     def create_invoice_complex_huf(self):
         """ Create a complex invoice in HUF, with cash rounding. """
@@ -287,7 +292,9 @@ class L10nHuEdiTestCommon(AccountTestInvoicingCommon):
         """ Create an invoice, send it, and create a cancellation wizard for it. """
         invoice = self.create_invoice_simple()
         invoice.action_post()
-        send_and_print = self.create_send_and_print(invoice, l10n_hu_edi_enable_nav_30=True)
+        send_and_print = self.create_send_and_print(invoice)
+        self.assertTrue(send_and_print.extra_edi_checkboxes and send_and_print.extra_edi_checkboxes.get('hu_nav_30', {}).get('checked'))
+        self.assertFalse(invoice._l10n_hu_edi_check_invoices())
         send_and_print.action_send_and_print()
         cancel_wizard = self.env['l10n_hu_edi.cancellation'].with_context({"default_invoice_id": invoice.id}).create({
             'code': 'ERRATIC_DATA',

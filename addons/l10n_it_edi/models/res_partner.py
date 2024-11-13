@@ -1,4 +1,3 @@
-# -*- coding:utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import re
@@ -12,6 +11,7 @@ class ResPartner(models.Model):
     _name = 'res.partner'
     _inherit = 'res.partner'
 
+    invoice_edi_format = fields.Selection(selection_add=[('it_edi_xml', 'FatturaPA')])
     l10n_it_pec_email = fields.Char(string="PEC e-mail")
     l10n_it_codice_fiscale = fields.Char(string="Codice Fiscale", size=16)
     l10n_it_pa_index = fields.Char(
@@ -141,9 +141,13 @@ class ResPartner(models.Model):
 
     @api.onchange('vat', 'country_id')
     def _l10n_it_onchange_vat(self):
-        if not self.l10n_it_codice_fiscale and self.vat and (self.country_id.code == "IT" or self.vat.startswith("IT")):
+        if self.vat and (
+            self.country_code == "IT"
+            if self.country_code
+            else self.vat.startswith("IT")
+        ):
             self.l10n_it_codice_fiscale = self._l10n_it_edi_normalized_codice_fiscale(self.vat)
-        elif self.country_id.code not in [False, "IT"]:
+        else:
             self.l10n_it_codice_fiscale = False
 
     @api.constrains('l10n_it_codice_fiscale')
@@ -181,7 +185,7 @@ class ResPartner(models.Model):
             for fields_tuple in check['fields']:
                 if invalid_records := self.filtered(lambda record: not any(record[field] for field in fields_tuple)):
                     views = single_views if len(invalid_records) == 1 else multi_views
-                    errors[key] = {
+                    errors[f"l10n_it_edi_{key}"] = {
                         'message': check['message'],
                         'action_text': _("View Partner(s)"),
                         'action': invalid_records._get_records_action(name=_("Check Partner(s)"), views=views),
@@ -196,3 +200,11 @@ class ResPartner(models.Model):
     def _peppol_eas_endpoint_depends(self):
         # extends account_edi_ubl_cii
         return super()._peppol_eas_endpoint_depends() + ['l10n_it_codice_fiscale']
+
+    def _get_suggested_invoice_edi_format(self):
+        # EXTENDS 'account'
+        res = super()._get_suggested_invoice_edi_format()
+        if self.country_code == 'IT':
+            return 'it_edi_xml'
+        else:
+            return res

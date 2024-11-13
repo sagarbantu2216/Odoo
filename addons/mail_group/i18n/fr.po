@@ -3,16 +3,15 @@
 # 	* mail_group
 # 
 # Translators:
-# Wil Odoo, 2023
-# Jolien De Paepe, 2023
+# Wil Odoo, 2024
 # Manon Rondou, 2024
 # 
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0\n"
+"Project-Id-Version: Odoo Server 18.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 21:55+0000\n"
-"PO-Revision-Date: 2023-10-26 23:09+0000\n"
+"POT-Creation-Date: 2024-09-26 08:55+0000\n"
+"PO-Revision-Date: 2024-09-25 09:41+0000\n"
 "Last-Translator: Manon Rondou, 2024\n"
 "Language-Team: French (https://app.transifex.com/odoo/teams/41243/fr/)\n"
 "MIME-Version: 1.0\n"
@@ -24,7 +23,7 @@ msgstr ""
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_message_reject_form
 msgid ") <span invisible=\"not send_email\">and send them an email</span>."
-msgstr ") <span invisible=\"not send_email\">et envoyez-lui un email</span>."
+msgstr ") <span invisible=\"not send_email\">et envoyez-lui un e-mail</span>."
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.confirmation_subscription
@@ -245,7 +244,7 @@ msgid ""
 "Add this email address to white list of people and accept all pending "
 "messages from the same author."
 msgstr ""
-"Ajouter cette adresse email à une liste blanche et acceptez tous les "
+"Ajouter cette adresse e-mail à une liste blanche et acceptez tous les "
 "messages en attente du même auteur."
 
 #. module: mail_group
@@ -302,7 +301,7 @@ msgstr "Tous les messages de ce groupe"
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_moderation_view_search
 msgid "Allowed Emails"
-msgstr "Emails autorisés"
+msgstr "E-mails autorisés"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_groups
@@ -317,9 +316,8 @@ msgstr "Toujours autoriser"
 #. module: mail_group
 #. odoo-javascript
 #: code:addons/mail_group/static/src/js/mail_group.js:0
-#, python-format
 msgid "An email with instructions has been sent."
-msgstr "Un email avec des instructions a été envoyé."
+msgstr "Un e-mail avec des instructions a été envoyé."
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_view_search
@@ -353,7 +351,7 @@ msgid ""
 " did not match any partner."
 msgstr ""
 "Auteur du message. S'il n'est pas indiqué, email_from peut contenir une "
-"adresse email ne correspondant à aucun partenaire."
+"adresse e-mail ne correspondant à aucun partenaire."
 
 #. module: mail_group
 #: model:ir.model.fields,field_description:mail_group.field_mail_group__access_group_id
@@ -385,8 +383,8 @@ msgid ""
 "Ban this email address and reject all pending messages from the same author "
 "and send an email to the author"
 msgstr ""
-"Bannir cette adresse email et rejeter tous les messages en attente du même "
-"auteur et envoyer un email à l'auteur"
+"Bannir cette adresse e-mail et rejeter tous les messages en attente du même "
+"auteur et envoyer un e-mail à l'auteur"
 
 #. module: mail_group
 #: model:ir.model.fields.selection,name:mail_group.selection__mail_group_message__author_moderation__ban
@@ -396,7 +394,7 @@ msgstr "Banni"
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_moderation_view_search
 msgid "Banned Emails"
-msgstr "Emails bannis"
+msgstr "E-mails bannis"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.group_archive_menu
@@ -504,14 +502,13 @@ msgstr "Nom d'affichage"
 #: model:ir.model.fields,field_description:mail_group.field_mail_group_member__email
 #: model:ir.model.fields,field_description:mail_group.field_mail_group_moderation__email
 msgid "Email"
-msgstr "Email"
+msgstr "E-mail"
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Email %s is invalid"
-msgstr "L'email %s n'est pas valide"
+msgstr "L'e-mail %s n'est pas valide"
 
 #. module: mail_group
 #: model:ir.model.fields,field_description:mail_group.field_mail_group__alias_email
@@ -522,7 +519,7 @@ msgstr "Alias de messagerie"
 #. module: mail_group
 #: model:ir.model.fields,field_description:mail_group.field_mail_group_message_reject__email_from_normalized
 msgid "Email From"
-msgstr "Email de"
+msgstr "E-mail de"
 
 #. module: mail_group
 #: model:ir.model.fields,help:mail_group.field_mail_group_message__email_from
@@ -530,18 +527,23 @@ msgid ""
 "Email address of the sender. This field is set when no matching partner is "
 "found and replaces the author_id field in the chatter."
 msgstr ""
-"Adresse email de l'expéditeur. Ce champ est défini quand aucun partenaire "
+"Adresse e-mail de l'expéditeur. Ce champ est défini quand aucun partenaire "
 "correspondant n'est trouvé et remplace le champ author_id dans le chatter."
+
+#. module: mail_group
+#: model:ir.model.fields,help:mail_group.field_mail_group__alias_domain
+msgid "Email domain e.g. 'example.com' in 'odoo@example.com'"
+msgstr "Domaine de l'e-mail e.g. 'example.com' dans 'odoo@example.com'"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_view_form
 msgid "Emails"
-msgstr "Emails"
+msgstr "E-mails"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_view_form
 msgid "Emails waiting an action for this group"
-msgstr "Les emails en attente d'une action pour ce groupe"
+msgstr "Les e-mails en attente d'une action pour ce groupe"
 
 #. module: mail_group
 #: model:ir.model.fields.selection,name:mail_group.selection__mail_group__access_mode__public
@@ -587,7 +589,6 @@ msgstr "Nom du groupe"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "Group message can only be linked to mail group. Current model is %s."
 msgstr ""
 "Le message de groupe peut uniquement être lié à un groupe de messagerie. Le "
@@ -644,18 +645,14 @@ msgstr "Image"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Invalid action for URL generation (%s)"
 msgstr "Action invalide pour la génération d'URL (%s)"
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_moderation.py:0
-#: code:addons/mail_group/models/mail_group_moderation.py:0
-#, python-format
-msgid "Invalid email address %r"
-msgstr "Adresse email invalide %r"
+msgid "Invalid email address “%s”"
+msgstr "Adresse e-mail invalide “%s”"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.invalid_token_subscription
@@ -765,7 +762,7 @@ msgstr "Liste de diffusion : Notifier les modérateurs de groupe"
 #. module: mail_group
 #: model:ir.model.fields,field_description:mail_group.field_mail_group_message__mail_message_id
 msgid "Mail Message"
-msgstr "Email"
+msgstr "E-mail"
 
 #. module: mail_group
 #: model:ir.model,name:mail_group.model_mail_group_member
@@ -858,7 +855,6 @@ msgstr "Messages par mois"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Messages are pending moderation"
 msgstr "Les messages sont en attente de modération"
 
@@ -891,22 +887,21 @@ msgstr "Modéré par"
 #. module: mail_group
 #: model:ir.model.fields,field_description:mail_group.field_mail_group__moderation_rule_ids
 msgid "Moderated Emails"
-msgstr "Emails modérés"
+msgstr "E-mails modérés"
 
 #. module: mail_group
 #: model:ir.model.fields,field_description:mail_group.field_mail_group__moderation_rule_count
 msgid "Moderated emails count"
-msgstr "Nombre d'emails modérés"
+msgstr "Nombre d'e-mails modérés"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_view_form
 msgid "Moderated emails in this group"
-msgstr "Emails modérés dans ce groupe"
+msgstr "E-mails modérés dans ce groupe"
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Moderated group must have moderators."
 msgstr "Un groupe modéré doit avoir des modérateurs."
 
@@ -945,9 +940,8 @@ msgstr "Modérateurs"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Moderators must have an email address."
-msgstr "Les modérateurs doivent avoir une adresse email."
+msgstr "Les modérateurs doivent avoir une adresse e-mail."
 
 #. module: mail_group
 #: model:mail.group,name:mail_group.mail_group_1
@@ -990,7 +984,7 @@ msgstr "Aucun message dans cette liste pour l'instant !"
 #. module: mail_group
 #: model:ir.model.fields,field_description:mail_group.field_mail_group_member__email_normalized
 msgid "Normalized Email"
-msgstr "Email normalisé"
+msgstr "E-mail normalisé"
 
 #. module: mail_group
 #: model:ir.model.fields,field_description:mail_group.field_mail_group_message__email_from_normalized
@@ -1015,7 +1009,6 @@ msgstr "Nombre de messages dans ce groupe"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid ""
 "Only an administrator or a moderator can send guidelines to group members."
 msgstr ""
@@ -1025,9 +1018,16 @@ msgstr ""
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "Only members can send email to the mailing list."
-msgstr "Seuls les membres peuvent envoyer un email à la liste de diffusion."
+msgstr "Seuls les membres peuvent envoyer un e-mail à la liste de diffusion."
+
+#. module: mail_group
+#. odoo-python
+#: code:addons/mail_group/models/mail_group.py:0
+msgid "Only selected groups of users can send email to the mailing list."
+msgstr ""
+"Seuls les groupes d'utilisateurs sélectionnés peuvent envoyer des e-mails à "
+"la liste de diffusion."
 
 #. module: mail_group
 #: model:ir.model.fields,help:mail_group.field_mail_group__alias_force_thread_id
@@ -1113,7 +1113,7 @@ msgid ""
 "- partners: only authenticated partners\n"
 "- followers: only followers of the related document or members of following channels\n"
 msgstr ""
-"Politique de publication d'un message sur le document via la passerelle d'emails.\n"
+"Politique de publication d'un message sur le document via la passerelle d'e-mails.\n"
 "- tout le monde : tout le monde peut publier\n"
 "- partenaires : seulement les partenaires authentifiés\n"
 "- abonnés : seulement les abonnés aux canaux suivis\n"
@@ -1142,7 +1142,6 @@ msgstr "Liste de diffusion publique"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/wizard/mail_group_message_reject.py:0
-#, python-format
 msgid "Re: %s"
 msgstr "Re : %s"
 
@@ -1240,7 +1239,7 @@ msgstr "Envoyer & Rejeter"
 #. module: mail_group
 #: model:ir.model.fields,field_description:mail_group.field_mail_group_message_reject__send_email
 msgid "Send Email"
-msgstr "Envoyer un email"
+msgstr "Envoyer un e-mail"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_view_form
@@ -1250,7 +1249,7 @@ msgstr "Envoyer les lignes de conduite"
 #. module: mail_group
 #: model:ir.model.fields,help:mail_group.field_mail_group_message_reject__send_email
 msgid "Send an email to the author of the message"
-msgstr "Envoyer un email à l'auteur du message"
+msgstr "Envoyer un e-mail à l'auteur du message"
 
 #. module: mail_group
 #: model:ir.model.fields,field_description:mail_group.field_mail_group__moderation_guidelines
@@ -1290,9 +1289,7 @@ msgstr "Sujet"
 #. module: mail_group
 #. odoo-javascript
 #: code:addons/mail_group/static/src/js/mail_group.js:0
-#: code:addons/mail_group/static/src/js/mail_group.js:0
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_groups
-#, python-format
 msgid "Subscribe"
 msgstr "S'inscrire"
 
@@ -1304,14 +1301,13 @@ msgstr "Confirmation de l'abonnement à un groupe de diffusion"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid ""
 "Template \"mail_group.mail_template_guidelines\" was not found. No email has"
 " been sent. Please contact an administrator to fix this issue."
 msgstr ""
 "Le modèle \"mail_group.mail_template_guidelines\" n'a pas été trouvé. Aucun "
-"email n'a été envoyé. Veuillez contacter un administrateur pour résoudre ce "
-"problème."
+"e-mail n'a été envoyé. Veuillez contacter un administrateur pour résoudre ce"
+" problème."
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_notify_moderation
@@ -1321,40 +1317,35 @@ msgstr "Merci !"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The \"Authorized Group\" is missing."
 msgstr "Le \"Groupe autorisé\" manque."
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.confirmation_subscription
 msgid "The email"
-msgstr "L'email"
+msgstr "L'e-mail"
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "The email \"%s\" is not valid."
-msgstr "L'email \"%s\" n'est pas valide."
+msgstr "L'e-mail \"%s\" n'est pas valide."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The group of the message do not match."
 msgstr "Le groupe de ce message ne correspond pas."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The guidelines description is empty."
 msgstr "La description des lignes de conduite est vide."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The guidelines description is missing."
 msgstr "La description des lignes de conduite manque."
 
@@ -1365,8 +1356,8 @@ msgid ""
 " email that does not reply to an existing record will cause the creation of "
 "a new record of this model (e.g. a Project Task)"
 msgstr ""
-"Le modèle (type de document Odoo) auquel correspond cet alias. Chaque email "
-"entrant ne correspondant pas à un enregistrement existant entraînera la "
+"Le modèle (type de document Odoo) auquel correspond cet alias. Chaque e-mail"
+" entrant ne correspondant pas à un enregistrement existant entraînera la "
 "création d'un nouvel enregistrement de ce modèle (par ex. une tâche d'un "
 "projet)"
 
@@ -1376,48 +1367,42 @@ msgid ""
 "The name of the email alias, e.g. 'jobs' if you want to catch emails for "
 "<jobs@example.odoo.com>"
 msgstr ""
-"Le nom de l'alias, par exemple 'carrières' pour récupérer les emails de "
+"Le nom de l'alias, par exemple 'carrières' pour récupérer les e-mails de "
 "<carrières@example.odoo.com>"
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The notification message is missing."
 msgstr "Le message de notification manque."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group.py:0
-#, python-format
 msgid "The partner can not be found."
 msgstr "Le partenaire est introuvable."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "The record of the message should be the group."
 msgstr "L'enregistrement du message devrait être le groupe."
 
 #. module: mail_group
 #. odoo-javascript
 #: code:addons/mail_group/static/src/js/mail_group.js:0
-#, python-format
 msgid "This email is already subscribed."
-msgstr "Cet email est déjà inscrit."
+msgstr "Cet e-mail est déjà inscrit."
 
 #. module: mail_group
 #. odoo-javascript
 #: code:addons/mail_group/static/src/js/mail_group.js:0
-#, python-format
 msgid "This email is not subscribed."
-msgstr "Cet email n'est pas inscrit."
+msgstr "Cet e-mail n'est pas inscrit."
 
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "This message can not be moderated"
 msgstr "Ce message ne peut pas être modéré"
 
@@ -1429,7 +1414,6 @@ msgstr "Ce partenaire est déjà inscrit au groupe."
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "Those messages can not be moderated: %s."
 msgstr "Ces messages ne peuvent pas être modérés : %s."
 
@@ -1441,9 +1425,7 @@ msgstr "À vérifier"
 #. module: mail_group
 #. odoo-javascript
 #: code:addons/mail_group/static/src/js/mail_group.js:0
-#: code:addons/mail_group/static/src/js/mail_group.js:0
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_groups
-#, python-format
 msgid "Unsubscribe"
 msgstr "Se désabonner"
 
@@ -1457,7 +1439,7 @@ msgstr "Se désabonner :"
 msgid ""
 "When people send an email to the alias of the list, they will appear here."
 msgstr ""
-"Lorsque des personnes envoient un email à l'alias de la liste, ils "
+"Lorsque des personnes envoient un e-mail à l'alias de la liste, ils "
 "apparaîtront ici."
 
 #. module: mail_group
@@ -1474,7 +1456,6 @@ msgstr "Sur liste blanche"
 #. module: mail_group
 #. odoo-python
 #: code:addons/mail_group/models/mail_group_message.py:0
-#, python-format
 msgid "Wrong status (%s)"
 msgstr "Statut erroné (%s)"
 
@@ -1482,7 +1463,7 @@ msgstr "Statut erroné (%s)"
 #: model:ir.model.constraint,message:mail_group.constraint_mail_group_moderation_mail_group_email_uniq
 msgid "You can create only one rule for a given email address in a group."
 msgstr ""
-"Vous ne pouvez créer qu'une seule règle pour une adresse email donnée dans "
+"Vous ne pouvez créer qu'une seule règle pour une adresse e-mail donnée dans "
 "un groupe."
 
 #. module: mail_group
@@ -1496,9 +1477,14 @@ msgid "_______________________________________________"
 msgstr "_______________________________________________"
 
 #. module: mail_group
+#: model_terms:ir.ui.view,arch_db:mail_group.mail_group_view_form
+msgid "alias"
+msgstr "alias"
+
+#. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_message_reject_form
 msgid "and send an email to the author ("
-msgstr "et envoyez un email à l'auteur ("
+msgstr "et envoyez un e-mail à l'auteur ("
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.message_attachments
@@ -1517,8 +1503,8 @@ msgstr "par ex. \"Newsletter\""
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_view_form
-msgid "e.g. domain.com"
-msgstr "par ex. domain.com"
+msgid "e.g. mycompany.com"
+msgstr "par ex. mycompany.com"
 
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_group_message_view_search
@@ -1572,4 +1558,4 @@ msgstr "désabonné de"
 #. module: mail_group
 #: model_terms:ir.ui.view,arch_db:mail_group.mail_groups
 msgid "your email..."
-msgstr "votre adresse email..."
+msgstr "votre adresse e-mail..."

@@ -5,12 +5,18 @@ import { ProjectTaskKanbanRecord } from './project_task_kanban_record';
 import { ProjectTaskKanbanHeader } from './project_task_kanban_header';
 import { useService } from '@web/core/utils/hooks';
 import { onWillStart } from "@odoo/owl";
+import { user } from "@web/core/user";
 
 export class ProjectTaskKanbanRenderer extends KanbanRenderer {
+    static components = {
+        ...KanbanRenderer.components,
+        KanbanRecord: ProjectTaskKanbanRecord,
+        KanbanHeader: ProjectTaskKanbanHeader,
+    };
+
     setup() {
         super.setup();
         this.action = useService('action');
-        const user = useService("user");
 
         onWillStart(async () => {
             this.isProjectManager = await user.hasGroup('project.group_project_manager');
@@ -24,12 +30,10 @@ export class ProjectTaskKanbanRenderer extends KanbanRenderer {
     }
 
     isProjectTasksContext() {
-        return this.props.list.context.active_model === "project.project" && !!this.props.list.context.default_project_id;
+        return (
+            ["project.project", "project.task.type.delete.wizard"].includes(
+                this.props.list.context.active_model
+            ) && !!this.props.list.context.default_project_id
+        );
     }
 }
-
-ProjectTaskKanbanRenderer.components = {
-    ...KanbanRenderer.components,
-    KanbanRecord: ProjectTaskKanbanRecord,
-    KanbanHeader: ProjectTaskKanbanHeader,
-};

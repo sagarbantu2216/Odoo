@@ -1,12 +1,10 @@
-/* @odoo-module */
-
+import { stateToUrl } from "@web/core/browser/router";
 import { loadEmoji } from "@web/core/emoji_picker/emoji_picker";
 
 import { escape, unaccent } from "@web/core/utils/strings";
-import { url } from "@web/core/utils/urls";
 
 const urlRegexp =
-    /\b(?:https?:\/\/\d{1,3}(?:\.\d{1,3}){3}|(?:https?:\/\/|(?:www\.))[-a-z0-9@:%._+~#=\u00C0-\u024F\u1E00-\u1EFF]{2,256}\.[a-z]{2,13})\b(?:[-a-z0-9@:%_+~#?&[\]^|{}`\\'$//=\u00C0-\u024F\u1E00-\u1EFF]|,(?!$| )|\.(?!$| |\.)|;(?!$| ))*/gi;
+    /\b(?:https?:\/\/\d{1,3}(?:\.\d{1,3}){3}|(?:https?:\/\/|(?:www\.))[-a-z0-9@:%._+~#=\u00C0-\u024F\u1E00-\u1EFF]{2,256}\.[a-z]{2,13})\b(?:[-a-z0-9@:%_+~#?&[\]^|{}`\\'$//=\u00C0-\u024F\u1E00-\u1EFF]|[.]*[-a-z0-9@:%_+~#?&[\]^|{}`\\'$//=\u00C0-\u024F\u1E00-\u1EFF]|,(?!$| )|\.(?!$| |\.)|;(?!$| ))*/gi;
 
 /**
  * Escape < > & as html entities
@@ -45,8 +43,8 @@ export async function prettifyMessageContent(rawBody, validRecords = []) {
     // as text internally and only make html enrichment at display time but
     // the current design makes this quite hard to do.
     body = generateMentionsLinks(body, validRecords);
-    body = parseAndTransform(body, addLink);
     body = await _generateEmojisOnHtml(body);
+    body = parseAndTransform(body, addLink);
     return body;
 }
 
@@ -165,7 +163,7 @@ export function escapeAndCompactTextContent(content) {
  * @param validRecords.partners {Array}
  * @return {string}
  */
-function generateMentionsLinks(body, { partners = [], threads = [] }) {
+function generateMentionsLinks(body, { partners = [], threads = [], specialMentions = [] }) {
     const mentions = [];
     for (const partner of partners) {
         const placeholder = `@-mention-partner-${partner.id}`;
@@ -181,9 +179,16 @@ function generateMentionsLinks(body, { partners = [], threads = [] }) {
     }
     for (const thread of threads) {
         const placeholder = `#-mention-channel-${thread.id}`;
-        const text = `#${escape(thread.displayName)}`;
+        let className, text;
+        if (thread.parent_channel_id) {
+            className = "o_channel_redirect o_channel_redirect_asThread";
+            text = escape(`#${thread.parent_channel_id.displayName} > ${thread.displayName}`);
+        } else {
+            className = "o_channel_redirect";
+            text = escape(`#${thread.displayName}`);
+        }
         mentions.push({
-            class: "o_channel_redirect",
+            class: className,
             id: thread.id,
             model: "discuss.channel",
             placeholder,
@@ -191,9 +196,14 @@ function generateMentionsLinks(body, { partners = [], threads = [] }) {
         });
         body = body.replace(text, placeholder);
     }
-    const baseHREF = url("/web");
+    for (const special of specialMentions) {
+        body = body.replace(
+            `@${escape(special)}`,
+            `<a href="#" class="o-discuss-mention">@${escape(special)}</a>`
+        );
+    }
     for (const mention of mentions) {
-        const href = `href='${baseHREF}#model=${mention.model}&id=${mention.id}'`;
+        const href = `href='${stateToUrl({ model: mention.model, resId: mention.id })}'`;
         const attClass = `class='${mention.class}'`;
         const dataOeId = `data-oe-id='${mention.id}'`;
         const dataOeModel = `data-oe-model='${mention.model}'`;
@@ -213,7 +223,10 @@ async function _generateEmojisOnHtml(htmlString) {
     const { emojis } = await loadEmoji();
     for (const emoji of emojis) {
         for (const source of [...emoji.shortcodes, ...emoji.emoticons]) {
-            const escapedSource = String(source).replace(/([.*+?=^!:${}()|[\]/\\])/g, "\\$1");
+            const escapedSource = escape(String(source)).replace(
+                /([.*+?=^!:${}()|[\]/\\])/g,
+                "\\$1"
+            );
             const regexp = new RegExp("(\\s|^)(" + escapedSource + ")(?=\\s|$)", "g");
             htmlString = htmlString.replace(regexp, "$1" + emoji.codepoints);
         }
@@ -247,3 +260,27 @@ export function convertBrToLineBreak(str) {
 export function cleanTerm(term) {
     return unaccent((typeof term === "string" ? term : "").toLowerCase());
 }
+
+/**
+ * Parses text to find email: Tagada <address@mail.fr> -> [Tagada, address@mail.fr] or False
+ *
+ * @param {string} text
+ * @returns {[string,string|boolean]|false}
+ */
+export function parseEmail(text) {
+    if (!text) {
+        return;
+    }
+    let result = text.match(/"?(.*?)"? <(.*@.*)>/);
+    if (result) {
+        const name = (result[1] || "").trim().replace(/(^"|"$)/g, "");
+        return [name, (result[2] || "").trim()];
+    }
+    result = text.match(/(.*@.*)/);
+    if (result) {
+        return [String(result[1] || "").trim(), String(result[1] || "").trim()];
+    }
+    return [text, false];
+}
+
+export const EMOJI_REGEX = /\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\u200d/gu;

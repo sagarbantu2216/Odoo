@@ -9,7 +9,7 @@ from uuid import uuid4
 from odoo import tools
 from odoo.addons.base.models.res_partner import Partner
 from odoo.addons.mail.tests.common import MailCommon, mail_new_test_user
-from odoo.tests.common import Form, tagged, users
+from odoo.tests import Form, tagged, users
 from odoo.tools import mute_logger
 
 
@@ -121,11 +121,13 @@ class TestPartner(MailCommon):
         for i in range(0, 2):
             mail_new_test_user(self.env, login=f'{name}-{i}-portal-user', groups='base.group_portal')
             mail_new_test_user(self.env, login=f'{name}-{i}-internal-user', groups='base.group_user')
-        partners_format = self.env['res.partner'].get_mention_suggestions(name, limit=5)
+        partners_format = self.env["res.partner"].get_mention_suggestions(name, limit=5)[
+            "res.partner"
+        ]
         self.assertEqual(len(partners_format), 5, "should have found limit (5) partners")
         # return format for user is either a dict (there is a user and the dict is data) or a list of command (clear)
-        self.assertEqual(list(map(lambda p: isinstance(p['user'], dict) and p['user']['isInternalUser'], partners_format)), [True, True, False, False, False], "should return internal users in priority")
-        self.assertEqual(list(map(lambda p: isinstance(p['user'], dict), partners_format)), [True, True, True, True, False], "should return partners without users last")
+        self.assertEqual(list(map(lambda p: p['isInternalUser'], partners_format)), [True, True, False, False, False], "should return internal users in priority")
+        self.assertEqual(list(map(lambda p: bool(p['userId']), partners_format)), [True, True, True, True, False], "should return partners without users last")
 
     @users('admin')
     def test_find_or_create(self):
@@ -485,6 +487,8 @@ class TestPartner(MailCommon):
             'False',
             # (simili) void values
             '', ' ', False, None,
+            # email only
+            'lenny.bar@gmail.com',
         ]
         expected = [
             ('Raoul', 'raoul@grosbedon.fr'),
@@ -493,6 +497,8 @@ class TestPartner(MailCommon):
             ('False', False),
             # (simili) void values: always False
             ('', False), ('', False), ('', False), ('', False),
+            # email only: email used as both name and email
+            ('lenny.bar@gmail.com', 'lenny.bar@gmail.com')
         ]
         for (expected_name, expected_email), sample in zip(expected, samples):
             with self.subTest(sample=sample):

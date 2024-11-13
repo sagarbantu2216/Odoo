@@ -28,7 +28,7 @@ var PortalSidebar = publicWidget.Widget.extend({
     _setDelayLabel: function () {
         var $sidebarTimeago = this.$el.find('.o_portal_sidebar_timeago').toArray();
         $sidebarTimeago.forEach((el) => {
-            var dateTime = deserializeDateTime($(el).attr('datetime')),
+            var dateTime = deserializeDateTime($(el).attr('datetime')).startOf('day'),
                 today = DateTime.now().startOf('day'),
                 diff = dateTime.diff(today).as("days"),
                 displayStr;
@@ -38,9 +38,9 @@ var PortalSidebar = publicWidget.Widget.extend({
                 } else if (diff > 0) {
                     // Workaround: force uniqueness of these two translations. We use %1d because the string
                     // with %d is already used in mail and mail's translations are not sent to the frontend.
-                    displayStr = _t('Due in %s days', Math.abs(diff).toFixed(1));
+                    displayStr = _t('Due in %s days', Math.abs(diff).toFixed());
                 } else {
-                    displayStr = _t('%s days overdue', Math.abs(diff).toFixed(1));
+                    displayStr = _t('%s days overdue', Math.abs(diff).toFixed());
                 }
                 $(el).text(displayStr);
         });

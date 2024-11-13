@@ -43,30 +43,32 @@ class MailMail(models.Model):
         body = super()._prepare_outgoing_body()
 
         if body and self.mailing_id and self.mailing_trace_ids:
-            for match in set(re.findall(tools.URL_REGEX, body)):
+            Wrapper = body.__class__
+            for match in set(re.findall(tools.mail.URL_REGEX, body)):
                 href = match[0]
                 url = match[1]
 
                 parsed = werkzeug.urls.url_parse(url, scheme='http')
 
                 if parsed.scheme.startswith('http') and parsed.path.startswith('/r/'):
-                    new_href = href.replace(url, url + '/m/' + str(self.mailing_trace_ids[0].id))
-                    body = body.replace(href, new_href)
+                    new_href = href.replace(url, f"{url}/m/{self.mailing_trace_ids[0].id}")
+                    body = body.replace(Wrapper(href), Wrapper(new_href))
 
             # generate tracking URL
             tracking_url = self._get_tracking_url()
-            body = tools.append_content_to_html(
+            body = tools.mail.append_content_to_html(
                 body,
                 f'<img src="{tracking_url}"/>',
                 plaintext=False,
             )
         return body
 
-    def _prepare_outgoing_list(self, recipients_follower_status=None):
+    def _prepare_outgoing_list(self, mail_server=False, recipients_follower_status=None):
         """ Update mailing specific links to replace generic unsubscribe and
         view links by email-specific links. Also add headers to allow
         unsubscribe from email managers. """
-        email_list = super()._prepare_outgoing_list(recipients_follower_status)
+        email_list = super()._prepare_outgoing_list(mail_server=mail_server,
+                                                    recipients_follower_status=recipients_follower_status)
         if not self.res_id or not self.mailing_id:
             return email_list
 
@@ -75,9 +77,12 @@ class MailMail(models.Model):
             if not email_values['email_to']:
                 continue
 
-            emails = tools.email_split(email_values['email_to'][0])
-            email_to = emails[0] if emails else False
+            # prepare links with normalize email
+            email_normalized = tools.email_normalize(email_values['email_to'][0], strict=False)
+            email_to = email_normalized or email_values['email_to'][0]
+
             unsubscribe_url = self.mailing_id._get_unsubscribe_url(email_to, self.res_id)
+            unsubscribe_oneclick_url = self.mailing_id._get_unsubscribe_oneclick_url(email_to, self.res_id)
             view_url = self.mailing_id._get_view_url(email_to, self.res_id)
 
             # replace links in body
@@ -97,7 +102,7 @@ class MailMail(models.Model):
 
             # add headers
             email_values['headers'].update({
-                'List-Unsubscribe': f'<{unsubscribe_url}>',
+                'List-Unsubscribe': f'<{unsubscribe_oneclick_url}>',
                 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
                 'Precedence': 'list',
                 'X-Auto-Response-Suppress': 'OOF',  # avoid out-of-office replies from MS Exchange

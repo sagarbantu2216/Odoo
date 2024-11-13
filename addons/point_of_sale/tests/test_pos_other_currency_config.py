@@ -4,7 +4,6 @@
 import odoo
 
 from odoo import tools
-from odoo.tests.common import Form
 from odoo.addons.point_of_sale.tests.common import TestPoSCommon
 
 @odoo.tests.tagged('post_install', '-at_install')
@@ -91,9 +90,9 @@ class TestPoSOtherCurrencyConfig(TestPoSCommon):
         self._run_test({
             'payment_methods': self.cash_pm2 | self.bank_pm2,
             'orders': [
-                {'pos_order_lines_ui_args': [(self.product1, 10), (self.product2, 10), (self.product3, 10)], 'uid': '00100-010-0001'},
-                {'pos_order_lines_ui_args': [(self.product1, 5), (self.product2, 5)], 'uid': '00100-010-0002'},
-                {'pos_order_lines_ui_args': [(self.product2, 5), (self.product3, 5)], 'payments': [(self.bank_pm2, 139.95)], 'uid': '00100-010-0003'},
+                {'pos_order_lines_ui_args': [(self.product1, 10), (self.product2, 10), (self.product3, 10)], 'uuid': '00100-010-0001'},
+                {'pos_order_lines_ui_args': [(self.product1, 5), (self.product2, 5)], 'uuid': '00100-010-0002'},
+                {'pos_order_lines_ui_args': [(self.product2, 5), (self.product3, 5)], 'payments': [(self.bank_pm2, 139.95)], 'uuid': '00100-010-0003'},
             ],
             'before_closing_cb': _before_closing_cb,
             'journal_entries_before_closing': {},
@@ -167,9 +166,9 @@ class TestPoSOtherCurrencyConfig(TestPoSCommon):
         self._run_test({
             'payment_methods': self.cash_pm2 | self.bank_pm2,
             'orders': [
-                {'pos_order_lines_ui_args': [(self.product1, 10), (self.product2, 10), (self.product3, 10)], 'uid': '00100-010-0001'},
-                {'pos_order_lines_ui_args': [(self.product1, 5), (self.product2, 5)], 'is_invoiced': True, 'customer': self.customer, 'uid': '00100-010-0002'},
-                {'pos_order_lines_ui_args': [(self.product2, 5), (self.product3, 5)], 'payments': [(self.bank_pm2, 139.95)], 'is_invoiced': True, 'customer': self.customer, 'uid': '00100-010-0003'},
+                {'pos_order_lines_ui_args': [(self.product1, 10), (self.product2, 10), (self.product3, 10)], 'uuid': '00100-010-0001'},
+                {'pos_order_lines_ui_args': [(self.product1, 5), (self.product2, 5)], 'is_invoiced': True, 'customer': self.customer, 'uuid': '00100-010-0002'},
+                {'pos_order_lines_ui_args': [(self.product2, 5), (self.product3, 5)], 'payments': [(self.bank_pm2, 139.95)], 'is_invoiced': True, 'customer': self.customer, 'uuid': '00100-010-0003'},
             ],
             'before_closing_cb': _before_closing_cb,
             'journal_entries_before_closing': {
@@ -263,10 +262,10 @@ class TestPoSOtherCurrencyConfig(TestPoSCommon):
         self._run_test({
             'payment_methods': self.cash_pm2,
             'orders': [
-                {'pos_order_lines_ui_args': [(self.product4, 7), (self.product5, 7)], 'uid': '00100-010-0001'},
-                {'pos_order_lines_ui_args': [(self.product5, 6), (self.product4, 6), (self.product6, 49)], 'uid': '00100-010-0002'},
-                {'pos_order_lines_ui_args': [(self.product5, 2), (self.product6, 13)], 'uid': '00100-010-0003'},
-                {'pos_order_lines_ui_args': [(self.product6, 1)], 'uid': '00100-010-0004'},
+                {'pos_order_lines_ui_args': [(self.product4, 7), (self.product5, 7)], 'uuid': '00100-010-0001'},
+                {'pos_order_lines_ui_args': [(self.product5, 6), (self.product4, 6), (self.product6, 49)], 'uuid': '00100-010-0002'},
+                {'pos_order_lines_ui_args': [(self.product5, 2), (self.product6, 13)], 'uuid': '00100-010-0003'},
+                {'pos_order_lines_ui_args': [(self.product6, 1)], 'uuid': '00100-010-0004'},
             ],
             'journal_entries_before_closing': {},
             'journal_entries_after_closing': {
@@ -294,7 +293,7 @@ class TestPoSOtherCurrencyConfig(TestPoSCommon):
         self._run_test({
             'payment_methods': self.cash_pm2,
             'orders': [
-                {'pos_order_lines_ui_args': [(self.product7, 7)], 'uid': '00100-010-0001'},
+                {'pos_order_lines_ui_args': [(self.product7, 7)], 'uuid': '00100-010-0001'},
             ],
             'journal_entries_before_closing': {},
             'journal_entries_after_closing': {
@@ -316,3 +315,50 @@ class TestPoSOtherCurrencyConfig(TestPoSCommon):
                 'bank_payments': [],
             },
         })
+
+    def test_bank_journal_balance(self):
+        """Verify that debit and credit are balanced when adding a difference to the bank."""
+
+        # Make a sale paid by bank
+        self.other_currency_config.open_ui()
+        session_id = self.other_currency_config.current_session_id
+        order = self.env['pos.order'].create({
+            'company_id': self.env.company.id,
+            'session_id': session_id.id,
+            'partner_id': False,
+            'lines': [(0, 0, {
+                'name': 'OL/0001',
+                'product_id': self.product1.id,
+                'price_unit': 10.00,
+                'discount': 0,
+                'qty': 1,
+                'tax_ids': False,
+                'price_subtotal': 10.00,
+                'price_subtotal_incl': 10.00,
+            })],
+            'pricelist_id': self.other_currency_config.pricelist_id.id,
+            'amount_paid': 10.00,
+            'amount_total': 10.00,
+            'amount_tax': 0.0,
+            'amount_return': 0.0,
+            'to_invoice': False,
+        })
+
+        # Make payment
+        payment_context = {"active_ids": order.ids, "active_id": order.id}
+        order_payment = self.env['pos.make.payment'].with_context(**payment_context).create({
+            'amount': order.amount_total,
+            'payment_method_id': self.bank_pm2.id
+        })
+        order_payment.with_context(**payment_context).check()
+
+        # Close session with counted +10 for bank compared with expected
+        session_id.action_pos_session_closing_control(bank_payment_method_diffs={self.bank_pm2.id: 10.00})  # Real 20, expected 10, diff 10
+
+        # Check debit/credit session's balance
+        for move in session_id._get_related_account_moves():
+            debit = credit = 0.0
+            for line in move.line_ids:
+                debit += line.debit
+                credit += line.credit
+            self.assertEqual(tools.float_compare(debit, credit, precision_rounding=self.other_currency_config.currency_id.rounding), 0)  # debit and credit should be equal

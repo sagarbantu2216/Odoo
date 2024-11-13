@@ -1,6 +1,4 @@
-/* @odoo-module */
-
-import { Component, useRef, useState } from "@odoo/owl";
+import { Component, useRef, useState, onMounted } from "@odoo/owl";
 
 import { browser } from "@web/core/browser/browser";
 import { useService } from "@web/core/utils/hooks";
@@ -8,13 +6,14 @@ import { sprintf } from "@web/core/utils/strings";
 import { _t } from "@web/core/l10n/translation";
 
 export class WelcomePage extends Component {
-    static props = ["data?", "proceed?"];
+    static props = ["proceed?"];
     static template = "mail.WelcomePage";
 
     setup() {
+        super.setup();
+        this.isClosed = false;
         this.store = useState(useService("mail.store"));
-        this.rpc = useService("rpc");
-        this.personaService = useService("mail.persona");
+        this.ui = useState(useService("ui"));
         this.state = useState({
             userName: "Guest",
             audioStream: null,
@@ -22,6 +21,12 @@ export class WelcomePage extends Component {
         });
         this.audioRef = useRef("audio");
         this.videoRef = useRef("video");
+        onMounted(() => {
+            if (this.store.discuss_public_thread.defaultDisplayMode === "video_full_screen") {
+                this.enableMicrophone();
+                this.enableVideo();
+            }
+        });
     }
 
     onKeydownInput(ev) {
@@ -30,10 +35,18 @@ export class WelcomePage extends Component {
         }
     }
 
-    async joinChannel() {
-        if (this.store.guest) {
-            await this.personaService.updateGuestName(this.store.self, this.state.userName.trim());
+    joinChannel() {
+        if (this.store.self.type === "guest") {
+            this.store.self.updateGuestName(this.state.userName.trim());
         }
+        browser.localStorage.setItem("discuss_call_preview_join_mute", !this.state.audioStream);
+        browser.localStorage.setItem(
+            "discuss_call_preview_join_video",
+            Boolean(this.state.videoStream)
+        );
+        this.stopTracksOnMediaStream(this.state.audioStream);
+        this.stopTracksOnMediaStream(this.state.videoStream);
+        this.isClosed = true;
         this.props.proceed?.();
     }
 
@@ -49,17 +62,17 @@ export class WelcomePage extends Component {
         }
         try {
             this.state.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.audioRef.el.srcObject = this.audioStream;
+            this.audioRef.el.srcObject = this.state.audioStream;
         } catch {
             // TODO: display popup asking the user to re-enable their mic
+        }
+        if (this.isClosed) {
+            this.stopTracksOnMediaStream(this.state.audioStream);
         }
     }
 
     disableMicrophone() {
         this.audioRef.el.srcObject = null;
-        if (!this.state.audioStream) {
-            return;
-        }
         this.stopTracksOnMediaStream(this.state.audioStream);
         this.state.audioStream = null;
     }
@@ -74,13 +87,13 @@ export class WelcomePage extends Component {
         } catch {
             // TODO: display popup asking the user to re-enable their camera
         }
+        if (this.isClosed) {
+            this.stopTracksOnMediaStream(this.state.videoStream);
+        }
     }
 
     disableVideo() {
         this.videoRef.el.srcObject = null;
-        if (!this.state.videoStream) {
-            return;
-        }
         this.stopTracksOnMediaStream(this.state.videoStream);
         this.state.videoStream = null;
     }
@@ -89,6 +102,9 @@ export class WelcomePage extends Component {
      * @param {MediaStream} mediaStream
      */
     stopTracksOnMediaStream(mediaStream) {
+        if (!mediaStream) {
+            return;
+        }
         for (const track of mediaStream.getTracks()) {
             track.stop();
         }
@@ -100,10 +116,6 @@ export class WelcomePage extends Component {
         } else {
             this.disableMicrophone();
         }
-        browser.localStorage.setItem(
-            "discuss_call_preview_join_mute",
-            Boolean(!this.state.audioStream)
-        );
     }
 
     async onClickVideo() {
@@ -112,12 +124,8 @@ export class WelcomePage extends Component {
         } else {
             this.disableVideo();
         }
-        browser.localStorage.setItem(
-            "discuss_call_preview_join_video",
-            Boolean(this.state.videoStream)
-        );
     }
     getLoggedInAsText() {
-        return sprintf(_t("Logged in as %s"), this.store.user.name);
+        return sprintf(_t("Logged in as %s"), this.store.self.name);
     }
 }

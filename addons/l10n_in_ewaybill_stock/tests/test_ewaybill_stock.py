@@ -1,33 +1,25 @@
 from freezegun import freeze_time
 
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 from odoo import _
 from odoo.fields import Command
 from odoo.tests import tagged
 
+from odoo.addons.l10n_in.tests.common import L10nInTestInvoicingCommon
+
 
 @tagged('post_install', '-at_install', 'post_install_l10n')
-class TestStockEwaybill(AccountTestInvoicingCommon):
+class TestStockEwaybill(L10nInTestInvoicingCommon):
 
     @classmethod
     def setUpClass(cls):
-        super().setUpClass(chart_template_ref='in')
-        cls.env.company.write({
-            'state_id': cls.env.ref('base.state_in_gj').id,
-            'zip': '380004'
-        })
+        super().setUpClass()
+
         cls.env.user.groups_id += cls.env.ref('stock.group_stock_manager')
-        cls.sgst_sale_5 = cls.env["account.chart.template"].ref("sgst_sale_5")
-        cls.product_a.write({
-            "l10n_in_hsn_code": "01111",
-            'taxes_id': [Command.set(cls.sgst_sale_5.ids)],
-            'standard_price': 500.00
-        })
+        cls.product_a.standard_price = 500.00
         cls.partner_a.write({
             'vat': '27DJMPM8965E1ZE',
             'l10n_in_gst_treatment': 'regular',
-            'state_id': cls.env.ref("base.state_in_mh").id,
-            'country_id': cls.env.ref('base.in').id,
+            'state_id': cls.state_in_mh.id,
             'zip': '431122'
         })
 
@@ -59,10 +51,10 @@ class TestStockEwaybill(AccountTestInvoicingCommon):
         self.assertRecordValues(ewaybill, [{
             'state': 'pending',
             'display_name': _('Pending'),
-            'fiscal_position_id': self.env['account.chart.template'].ref('fiscal_position_in_inter_state').id,
+            'fiscal_position_id': self.fp_in_inter_state.id,
         }])
-        ewaybill.fiscal_position_id = self.env['account.chart.template'].ref('fiscal_position_in_inter_state')
-        self.assertEqual(ewaybill.move_ids[0].ewaybill_tax_ids, self.env['account.chart.template'].ref('igst_sale_5'))
+        ewaybill.fiscal_position_id = self.fp_in_inter_state
+        self.assertEqual(ewaybill.move_ids[0].ewaybill_tax_ids, self.igst_sale_5)
         expected_json = {
             'supplyType': 'O',
             'subSupplyType': '10',
@@ -71,25 +63,25 @@ class TestStockEwaybill(AccountTestInvoicingCommon):
             'transDistance': '0',
             'docNo': 'compa/OUT/00001',
             'docDate': '26/04/2024',
-            'fromGstin': 'URP',
+            'fromGstin': '24AAGCC7144L6ZE',
             'toGstin': '27DJMPM8965E1ZE',
-            'fromTrdName': 'company_1_data',
-            'toTrdName': 'partner_a',
+            'fromTrdName': 'Default Company',
+            'toTrdName': 'Partner Intra State',
             'fromStateCode': 24,
             'toStateCode': 27,
-            'fromAddr1': '',
-            'toAddr1': '',
-            'fromAddr2': '',
-            'toAddr2': '',
-            'fromPlace': '',
-            'toPlace': '',
-            'fromPincode': 380004,
+            'fromAddr1': 'Khodiyar Chowk',
+            'toAddr1': 'Karansinhji Rd',
+            'fromAddr2': 'Sala Number 3',
+            'toAddr2': 'Karanpara',
+            'fromPlace': 'Amreli',
+            'toPlace': 'Rajkot',
+            'fromPincode': 365220,
             'toPincode': 431122,
             'actToStateCode': 27,
             'actFromStateCode': 24,
             'itemList': [{
                 'productName': 'product_a',
-                'hsnCode': '01111',
+                'hsnCode': '111111',
                 'productDesc': 'product_a',
                 'quantity': 5.0,
                 'qtyUnit': 'UNT',
@@ -108,7 +100,10 @@ class TestStockEwaybill(AccountTestInvoicingCommon):
         self.assertDictEqual(ewaybill._ewaybill_generate_direct_json(), expected_json)
 
     @freeze_time('2024-04-26')
-    def test_ewaybill_stock_sub_type_other(self):
+    def test_ewaybill_stock_test_2(self):
+        """
+        Ewaybill challan type other test with description
+        """
         delivery_picking = self._create_stock_picking()
         ewaybill = self.env['l10n.in.ewaybill'].create({
             'picking_id': delivery_picking.id,
@@ -126,28 +121,28 @@ class TestStockEwaybill(AccountTestInvoicingCommon):
           'transDistance': '0',
           'docNo': 'compa/OUT/00002',
           'docDate': '26/04/2024',
-          'fromGstin': 'URP',
+          'fromGstin': '24AAGCC7144L6ZE',
           'toGstin': '27DJMPM8965E1ZE',
-          'fromTrdName': 'company_1_data',
-          'toTrdName': 'partner_a',
+          'fromTrdName': 'Default Company',
+          'toTrdName': 'Partner Intra State',
           'fromStateCode': 24,
           'toStateCode': 27,
-          'fromAddr1': '',
-          'toAddr1': '',
-          'fromAddr2': '',
-          'toAddr2': '',
-          'fromPlace': '',
-          'toPlace': '',
-          'fromPincode': 380004,
+          'fromAddr1': 'Khodiyar Chowk',
+          'toAddr1': 'Karansinhji Rd',
+          'fromAddr2': 'Sala Number 3',
+          'toAddr2': 'Karanpara',
+          'fromPlace': 'Amreli',
+          'toPlace': 'Rajkot',
+          'fromPincode': 365220,
           'toPincode': 431122,
           'actToStateCode': 27,
           'actFromStateCode': 24,
           'transporterId': '27DJMPM8965E1ZE',
-          'transporterName': 'partner_a',
+          'transporterName': 'Partner Intra State',
           'itemList': [
             {
               'productName': 'product_a',
-              'hsnCode': '01111',
+              'hsnCode': '111111',
               'productDesc': 'product_a',
               'quantity': 5.0,
               'qtyUnit': 'UNT',
@@ -165,3 +160,33 @@ class TestStockEwaybill(AccountTestInvoicingCommon):
           'totInvValue': 2625.0
         }
         self.assertDictEqual(ewaybill._ewaybill_generate_direct_json(), expected_json)
+
+    @freeze_time('2024-04-26')
+    def test_ewaybill_stock_test_3(self):
+        """
+        Ewaybill Zero distance test
+        """
+        delivery_picking = self._create_stock_picking()
+        ewaybill = self.env['l10n.in.ewaybill'].create({
+            'type_id': self.env.ref('l10n_in_ewaybill_stock.type_delivery_challan_sub_others').id,
+            'type_description': "Other reasons",
+            'picking_id': delivery_picking.id,
+            'transporter_id': self.partner_a.id,
+            'mode': '2',
+            'distance': 0,
+            'transportation_doc_no': 123456789,
+            'transportation_doc_date': '2024-04-26'
+        })
+        expected_distance = 118
+        response = {
+            'status_cd': '1',
+            'status_desc': 'EWAYBILL request succeeds',
+            'data': {
+                'ewayBillNo': 123456789012,
+                'ewayBillDate': '26/02/2024 12:09:43 PM',
+                'validUpto': '27/02/2024 12:09:43 PM',
+                "alert": ", Distance between these two pincodes is 118, "
+            }
+        }
+        ewaybill._l10n_in_ewaybill_stock_handle_zero_distance_alert_if_present(response)
+        self.assertEqual(ewaybill.distance, expected_distance)

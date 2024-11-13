@@ -100,8 +100,8 @@ class PaymentTransaction(models.Model):
         tx_details = authorize_api.get_transaction_details(self.provider_reference)
         if 'err_code' in tx_details:  # Could not retrieve the transaction details.
             raise ValidationError("Authorize.Net: " + _(
-                "Could not retrieve the transaction details. (error code: %s; error_details: %s)",
-                tx_details['err_code'], tx_details.get('err_msg')
+                "Could not retrieve the transaction details. (error code: %(error_code)s; error_details: %(error_message)s)",
+                error_code=tx_details['err_code'], error_message=tx_details.get('err_msg'),
             ))
 
         refund_tx = self.env['payment.transaction']
@@ -119,7 +119,7 @@ class PaymentTransaction(models.Model):
             self.env.ref('payment.cron_post_process_payment_tx')._trigger()
         elif any(tx_status in TRANSACTION_STATUS_MAPPING[k] for k in ('authorized', 'captured')):
             if tx_status in TRANSACTION_STATUS_MAPPING['authorized']:
-                # The payment has not been settle on Authorize.net yet. It must be voided rather
+                # The payment has not been settled on Authorize.net yet. It must be voided rather
                 # than refunded. Since the funds have not moved yet, we don't create a refund tx.
                 res_content = authorize_api.void(self.provider_reference)
                 tx_to_process = self
@@ -139,8 +139,8 @@ class PaymentTransaction(models.Model):
             tx_to_process._handle_notification_data('authorize', data)
         else:
             raise ValidationError("Authorize.net: " + _(
-                "The transaction is not in a status to be refunded. (status: %s, details: %s)",
-                tx_status, tx_details.get('messages', {}).get('message')
+                "The transaction is not in a status to be refunded. (status: %(status)s, details: %(message)s)",
+                status=tx_status, message=tx_details.get('messages', {}).get('message'),
             ))
         return refund_tx
 
@@ -239,14 +239,14 @@ class PaymentTransaction(models.Model):
                 if self.operation == 'validation':  # Validation txs are authorized and then voided
                     self._set_done()  # If the refund went through, the validation tx is confirmed
                 else:
-                    self._set_canceled()
+                    self._set_canceled(extra_allowed_states=('done',))
             elif status_type == 'refund' and self.operation == 'refund':
                 self._set_done()
                 # Immediately post-process the transaction as the post-processing will not be
                 # triggered by a customer browsing the transaction from the portal.
                 self.env.ref('payment.cron_post_process_payment_tx')._trigger()
         elif status_code == '2':  # Declined
-            self._set_canceled()
+            self._set_canceled(state_message=response_content.get('x_response_reason_text'))
         elif status_code == '4':  # Held for Review
             self._set_pending()
         else:  # Error / Unknown code

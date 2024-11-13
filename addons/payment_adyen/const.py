@@ -24,7 +24,7 @@ CURRENCY_DECIMALS = {
 }
 
 # The codes of the payment methods to activate when Adyen is activated.
-DEFAULT_PAYMENT_METHODS_CODES = [
+DEFAULT_PAYMENT_METHOD_CODES = {
     # Primary payment methods.
     'card',
     # Brand payment methods.
@@ -32,7 +32,7 @@ DEFAULT_PAYMENT_METHODS_CODES = [
     'mastercard',
     'amex',
     'discover',
-]
+}
 
 # Mapping of payment method codes to Adyen codes.
 PAYMENT_METHODS_MAPPING = {
@@ -41,6 +41,7 @@ PAYMENT_METHODS_MAPPING = {
     'bacs_direct_debit': 'directdebit_GB',
     'bancontact_card': 'bcmc',
     'bancontact': 'bcmc_mobile',
+    'cash_app_pay': 'cashapp',
     'gopay': 'gopay_wallet',
     'becs_direct_debit': 'au_becs_debit',
     'afterpay': 'afterpaytouch',

@@ -3,16 +3,15 @@
 # 	* payment_aps
 # 
 # Translators:
-# Wil Odoo, 2023
-# Larissa Manderfeld, 2024
+# Wil Odoo, 2024
 # 
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-10-26 21:56+0000\n"
-"PO-Revision-Date: 2023-10-26 23:09+0000\n"
-"Last-Translator: Larissa Manderfeld, 2024\n"
+"PO-Revision-Date: 2024-09-25 09:41+0000\n"
+"Last-Translator: Wil Odoo, 2024\n"
 "Language-Team: Spanish (https://app.transifex.com/odoo/teams/41243/es/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -28,7 +27,7 @@ msgstr "Código de acceso APS"
 #. module: payment_aps
 #: model:ir.model.fields,field_description:payment_aps.field_payment_provider__aps_merchant_identifier
 msgid "APS Merchant Identifier"
-msgstr "Identificador de vendedor APS"
+msgstr "Identificador de comerciante de APS"
 
 #. module: payment_aps
 #: model:ir.model.fields,field_description:payment_aps.field_payment_provider__aps_sha_request
@@ -58,12 +57,11 @@ msgstr "Código"
 #. module: payment_aps
 #: model_terms:ir.ui.view,arch_db:payment_aps.payment_provider_form
 msgid "Merchant Identifier"
-msgstr "Identificador del vendedor"
+msgstr "Identificador del comerciante"
 
 #. module: payment_aps
 #. odoo-python
 #: code:addons/payment_aps/models/payment_transaction.py:0
-#, python-format
 msgid "No transaction found matching reference %s."
 msgstr ""
 "No se ha encontrado ninguna transacción que coincida con la referencia %s."
@@ -81,25 +79,22 @@ msgstr "Transacción de pago"
 #. module: payment_aps
 #. odoo-python
 #: code:addons/payment_aps/models/payment_transaction.py:0
-#, python-format
 msgid "Received data with missing payment state."
 msgstr "Datos recibidos sin estado de pago."
 
 #. module: payment_aps
 #. odoo-python
 #: code:addons/payment_aps/models/payment_transaction.py:0
-#, python-format
 msgid "Received data with missing reference %(ref)s."
 msgstr "Datos recibidos sin referencia %(ref)s."
 
 #. module: payment_aps
 #. odoo-python
 #: code:addons/payment_aps/models/payment_transaction.py:0
-#, python-format
 msgid ""
 "Received invalid transaction status %(status)s and reason '%(reason)s'."
 msgstr ""
-"Se recibió un estado de transacción que no es válido %(status)s y el motivo "
+"Se recibió un estado de transacción no válido %(status)s y la razón "
 "'%(reason)s'."
 
 #. module: payment_aps
@@ -115,13 +110,14 @@ msgstr "Frase de respuesta SHA"
 #. module: payment_aps
 #: model:ir.model.fields,help:payment_aps.field_payment_provider__aps_access_code
 msgid "The access code associated with the merchant account."
-msgstr "El código de acceso asociado a la cuenta de vendedor."
+msgstr "El código de acceso asociado a la cuenta de comerciante."
 
 #. module: payment_aps
 #: model:ir.model.fields,help:payment_aps.field_payment_provider__aps_merchant_identifier
 msgid "The code of the merchant account to use with this provider."
 msgstr ""
-"El código de la cuenta de vendedor que se debe de usar con este proveedor."
+"El código de la cuenta de comerciante que se debe de usar con este "
+"proveedor."
 
 #. module: payment_aps
 #: model:ir.model.fields,help:payment_aps.field_payment_provider__code

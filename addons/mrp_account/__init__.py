@@ -2,11 +2,12 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from . import models
 from . import report
+from . import wizard
 
 
 def _configure_journals(env):
     # if we already have a coa installed, create journal and set property field
-    for company in env['res.company'].search([('chart_template', '!=', False)]):
+    for company in env['res.company'].search([('chart_template', '!=', False)], order="parent_path"):
         ChartTemplate = env['account.chart.template'].with_company(company)
         template_code = company.chart_template
         template_data = ChartTemplate._get_chart_template_data(template_code)['template_data']

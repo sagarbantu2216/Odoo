@@ -46,14 +46,15 @@ class PosMercadoPagoWebhook(http.Controller):
 
         # If and only if this webhook is related with a payment intend (see payment_mercado_pago.js)
         # then the field data['additional_info']['external_reference'] contains a string
-        # formated like "XXX_YYY" where "XXX" is the session_id and "YYY" is the payment_method_id
+        # formated like "XXX_YYY_ZZZ" where "XXX" is the session_id, "YYY" is the payment_method_id,
+        # and ZZZ is the pos_reference/uid for customer identification (Format ZZZZ-ZZZZ-ZZZZ)
         external_reference = data.get('additional_info', {}).get('external_reference')
 
-        if not external_reference or not re.fullmatch(r'\d+_\d+', external_reference):
+        if not external_reference or not re.fullmatch(r'\d+_\d+[_\d-]*', external_reference):
             _logger.debug('POST message received with no or malformed "external_reference" key')
             return http.Response(status=400)
 
-        session_id, payment_method_id = external_reference.split('_')
+        session_id, payment_method_id, _ = external_reference.split('_')
 
         pos_session_sudo = request.env['pos.session'].sudo().browse(int(session_id))
         if not pos_session_sudo or pos_session_sudo.state != 'opened':
@@ -78,7 +79,9 @@ class PosMercadoPagoWebhook(http.Controller):
         _logger.debug('Webhook authenticated, POST message: %s', data)
 
         # Notify the frontend that we received a message from Mercado Pago
-        request.env['bus.bus']._sendone(pos_session_sudo._get_bus_channel_name(), 'MERCADO_PAGO_LATEST_MESSAGE', {})
+        pos_session_sudo.config_id._notify('MERCADO_PAGO_LATEST_MESSAGE', {
+            'config_id': pos_session_sudo.config_id.id
+        })
 
         # Acknowledge Mercado Pago message
         return http.Response('OK', status=200)

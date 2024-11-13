@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import hashlib
 import hmac
 
-from odoo import fields, models, _
+from odoo import api, fields, models, _
+from odoo.addons.portal.utils import validate_thread_with_hash_pid, validate_thread_with_token
 
 
 class MailThread(models.AbstractModel):
@@ -30,12 +30,16 @@ class MailThread(models.AbstractModel):
 
         customer = self._mail_get_partners(introspect_fields=False)[self.id]
         if customer:
-            access_token = self._portal_ensure_token()
+            # sudo: mail.thread - user posting with read access should be able to create token when
+            # notifying other customers that need it
+            access_token = self.sudo()._portal_ensure_token()
             local_msg_vals = dict(msg_vals or {})
             local_msg_vals['access_token'] = access_token
             local_msg_vals['pid'] = customer.id
             local_msg_vals['hash'] = self._sign_token(customer.id)
-            local_msg_vals.update(customer.signup_get_auth_param()[customer.id])
+            # sudo: mail.thread - user posting with read access should be able to get/create signup
+            # token when notifying other customers that need it
+            local_msg_vals.update(customer.sudo().signup_get_auth_param()[customer.id])
             access_link = self._notify_get_action_link('view', **local_msg_vals)
 
             new_group = [
@@ -79,3 +83,22 @@ class MailThread(models.AbstractModel):
         secret = self.env["ir.config_parameter"].sudo().get_param("database.secret")
         token = (self.env.cr.dbname, self[self._mail_post_token_field], pid)
         return hmac.new(secret.encode('utf-8'), repr(token).encode('utf-8'), hashlib.sha256).hexdigest()
+
+    def _portal_get_parent_hash_token(self, pid):
+        """ Overridden in models which have M2o 'parent' field and can be shared on
+        either an individual basis or indirectly in a group via the M2o record.
+
+        :return: False or logical parent's _sign_token() result
+        """
+        return False
+
+    @api.model
+    def _get_thread_with_access(self, thread_id, mode="read", **kwargs):
+        if thread := super()._get_thread_with_access(thread_id, mode, **kwargs):
+            return thread
+        thread = self.browse(thread_id).sudo()
+        if validate_thread_with_hash_pid(thread, kwargs.get("hash"), kwargs.get("pid")):
+            return thread
+        if validate_thread_with_token(thread, kwargs.get("token")):
+            return thread
+        return self.browse()

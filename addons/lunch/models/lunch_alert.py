@@ -127,8 +127,6 @@ class LunchAlert(models.Model):
                 'active': False,
                 'interval_type': 'days',
                 'interval_number': 1,
-                'numbercall': -1,
-                'doall': False,
                 'name': "Lunch: alert chat notification",
                 'model_id': self.env['ir.model']._get_id(self._name),
                 'state': 'code',
@@ -195,6 +193,8 @@ class LunchAlert(models.Model):
         partners = self.env['lunch.order'].search(order_domain).user_id.partner_id
         if partners:
             self.env['mail.thread'].message_notify(
+                model=self._name,
+                res_id=self.id,
                 body=self.message,
                 partner_ids=partners.ids,
                 subject=_('Your Lunch Order'),

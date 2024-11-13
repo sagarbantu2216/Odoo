@@ -32,18 +32,8 @@ class PaymentCommon(BaseCommon):
         cls.group_public = cls.env.ref('base.group_public')
 
         cls.admin_user = cls.env.ref('base.user_admin')
-        cls.internal_user = cls.env['res.users'].create({
-            'name': 'Internal User (Test)',
-            'login': 'internal',
-            'password': 'internal',
-            'groups_id': [Command.link(cls.group_user.id)]
-        })
-        cls.portal_user = cls.env['res.users'].create({
-            'name': 'Portal User (Test)',
-            'login': 'payment_portal',
-            'password': 'payment_portal',
-            'groups_id': [Command.link(cls.group_portal.id)]
-        })
+        cls.internal_user = cls._create_new_internal_user()
+        cls.portal_user = cls._create_new_portal_user()
         cls.public_user = cls.env.ref('base.public_user')
 
         cls.admin_partner = cls.admin_user.partner_id
@@ -106,17 +96,17 @@ class PaymentCommon(BaseCommon):
 
         account_payment_module = cls.env['ir.module.module']._get('account_payment')
         cls.account_payment_installed = account_payment_module.state in ('installed', 'to upgrade')
-        cls.enable_reconcile_after_done_patcher = True
+        cls.enable_post_process_patcher = True
 
     def setUp(self):
         super().setUp()
-        if self.account_payment_installed and self.enable_reconcile_after_done_patcher:
+        if self.account_payment_installed and self.enable_post_process_patcher:
             # disable account payment generation if account_payment is installed
             # because the accounting setup of providers is not managed in this common
-            self.reconcile_after_done_patcher = patch(
-                'odoo.addons.account_payment.models.payment_transaction.PaymentTransaction._reconcile_after_done',
+            self.post_process_patcher = patch(
+                'odoo.addons.account_payment.models.payment_transaction.PaymentTransaction._post_process',
             )
-            self.startPatcher(self.reconcile_after_done_patcher)
+            self.startPatcher(self.post_process_patcher)
 
     #=== Utils ===#
 
@@ -167,6 +157,14 @@ class PaymentCommon(BaseCommon):
     @classmethod
     def _get_provider_domain(cls, code):
         return [('code', '=', code)]
+
+    @classmethod
+    def _prepare_user(cls, user, group_xmlid):
+        user.groups_id = [Command.link(cls.env.ref(group_xmlid).id)]
+        # Flush and invalidate the cache to allow checking access rights.
+        user.flush_recordset()
+        user.invalidate_recordset()
+        return user
 
     def _create_transaction(self, flow, sudo=True, **values):
         default_values = {
@@ -239,10 +237,10 @@ class PaymentCommon(BaseCommon):
         This method cannot be used with functions that make requests. Any exception raised in the
         scope of the new request will not be caught and will make the test fail.
 
-        :param class exception_class: The class of the exception to monitor
-        :param function fun: The function to call when monitoring for exceptions
-        :param list args: The positional arguments passed as-is to the called function
-        :param dict kwargs: The keyword arguments passed as-is to the called function
+        :param class exception_class: The class of the exception to monitor.
+        :param function fun: The function to call when monitoring for exceptions.
+        :param list args: The positional arguments passed as-is to the called function.
+        :param dict kwargs: The keyword arguments passed as-is to the called function.
         :return: None
         """
         try:
@@ -250,7 +248,7 @@ class PaymentCommon(BaseCommon):
         except exception_class:
             self.fail(f"{func.__name__} should not raise error of class {exception_class.__name__}")
         except Exception:
-            pass  # Any exception whose class is not monitored is caught and ignored
+            pass  # Any exception whose class is not monitored is caught and ignored.
 
     def _skip_if_account_payment_is_not_installed(self):
         """ Skip current test if `account_payment` module is not installed. """

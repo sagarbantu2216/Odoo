@@ -20,7 +20,7 @@ class PaymentPortal(payment_portal.PaymentPortal):
                 _("The provided order or access token is invalid."))
 
         if order_sudo.state == "cancel":
-            raise ValidationError(_("The order has been canceled."))
+            raise ValidationError(_("The order has been cancelled."))
         return order_sudo
 
     @staticmethod
@@ -29,10 +29,7 @@ class PaymentPortal(payment_portal.PaymentPortal):
             raise AccessError(_("The POS session is not opened."))
 
     def _get_partner_sudo(self, user_sudo):
-        partner_sudo = user_sudo.partner_id
-        if not partner_sudo and user_sudo._is_public():
-            partner_sudo = self.env.ref('base.public_user')
-        return partner_sudo
+        return user_sudo.partner_id
 
     def _redirect_login(self):
         return request.redirect('/web/login?' + url_encode({'redirect': request.httprequest.full_path}))
@@ -98,6 +95,8 @@ class PaymentPortal(payment_portal.PaymentPortal):
         self._ensure_session_open(pos_order_sudo)
 
         user_sudo = request.env.user
+        if not pos_order_sudo.partner_id:
+            user_sudo = request.env.ref('base.public_user')
         logged_in = not user_sudo._is_public()
         partner_sudo = pos_order_sudo.partner_id or self._get_partner_sudo(user_sudo)
         if not partner_sudo:
@@ -178,6 +177,8 @@ class PaymentPortal(payment_portal.PaymentPortal):
         self._ensure_session_open(pos_order_sudo)
         exit_route = request.httprequest.args.get('exit_route')
         user_sudo = request.env.user
+        if not pos_order_sudo.partner_id:
+            user_sudo = request.env.ref('base.public_user')
         logged_in = not user_sudo._is_public()
         partner_sudo = pos_order_sudo.partner_id or self._get_partner_sudo(user_sudo)
         if not partner_sudo:
@@ -278,7 +279,7 @@ class PaymentPortal(payment_portal.PaymentPortal):
             amount=tx_sudo.amount,
             currency=tx_sudo.currency_id,
             provider_name=tx_sudo.provider_id.name,
-            tx=tx_sudo, # for the payment.transaction_status template
+            tx=tx_sudo, # for the payment.state_header template
         )
 
         if tx_sudo.state not in ('authorized', 'done'):

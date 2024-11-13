@@ -1,17 +1,18 @@
 /** @odoo-module **/
 
 import { AttendeeCalendarModel } from "@calendar/views/attendee_calendar/attendee_calendar_model";
+import { rpc } from "@web/core/network/rpc";
 import { patch } from "@web/core/utils/patch";
 import { useState } from "@odoo/owl";
 
 patch(AttendeeCalendarModel, {
-    services: [...AttendeeCalendarModel.services, "rpc"],
+    services: [...AttendeeCalendarModel.services],
 });
 
 patch(AttendeeCalendarModel.prototype, {
-    setup(params, { rpc }) {
+    setup(params) {
         super.setup(...arguments);
-        this.rpc = rpc;
+        this.isAlive = params.isAlive;
         this.microsoftPendingSync = false;
         this.state = useState({
             microsoftIsSync: true,
@@ -38,12 +39,15 @@ patch(AttendeeCalendarModel.prototype, {
             console.error("Could not synchronize microsoft events now.", error);
             this.microsoftPendingSync = false;
         }
-        return super.updateData(...arguments);
+        if (this.isAlive()) {
+            return super.updateData(...arguments);
+        }
+        return new Promise(() => {});
     },
 
     async syncMicrosoftCalendar(silent = false) {
         this.microsoftPendingSync = true;
-        const result = await this.rpc(
+        const result = await rpc(
             "/microsoft_calendar/sync_data",
             {
                 model: this.resModel,

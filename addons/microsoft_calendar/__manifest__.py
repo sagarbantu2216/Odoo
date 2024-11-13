@@ -8,7 +8,6 @@
     'depends': ['microsoft_account', 'calendar'],
     'data': [
         'data/microsoft_calendar_data.xml',
-        'security/microsoft_calendar_security.xml',
         'security/ir.model.access.csv',
         'wizard/reset_account_views.xml',
         'views/res_config_settings_views.xml',
@@ -24,6 +23,7 @@
         ],
         'web.qunit_suite_tests': [
             'microsoft_calendar/static/tests/microsoft_calendar_mock_server.js',
+            'microsoft_calendar/static/tests/microsoft_calendar_tests.js',
         ],
         'web.qunit_mobile_suite_tests': [
             'microsoft_calendar/static/tests/microsoft_calendar_mock_server.js',

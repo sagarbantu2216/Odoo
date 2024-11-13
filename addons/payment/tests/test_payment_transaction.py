@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+from odoo.exceptions import AccessError
 from odoo.tests import tagged
 from odoo.tools import mute_logger
 
@@ -10,6 +11,45 @@ from odoo.addons.payment.tests.common import PaymentCommon
 
 @tagged('-at_install', 'post_install')
 class TestPaymentTransaction(PaymentCommon):
+
+    def test_capture_allowed_for_authorized_users(self):
+        """ Test that users who have access to a transaction can capture it. """
+        self.provider.support_manual_capture = 'full_only'
+        tx = self._create_transaction('redirect', state='authorized')
+        user = self._prepare_user(self.internal_user, 'account.group_account_invoice')
+        self._assert_does_not_raise(AccessError, tx.with_user(user).action_capture)
+
+    def test_void_allowed_for_authorized_users(self):
+        """ Test that users who have access to a transaction can void it. """
+        self.provider.support_manual_capture = 'full_only'
+        tx = self._create_transaction('redirect', state='authorized')
+        user = self._prepare_user(self.internal_user, 'account.group_account_invoice')
+        self._assert_does_not_raise(AccessError, tx.with_user(user).action_void)
+
+    def test_refund_allowed_for_authorized_users(self):
+        """ Test that users who have access to a transaction can refund it. """
+        self.provider.support_refund = 'full_only'
+        tx = self._create_transaction('redirect', state='done')
+        user = self._prepare_user(self.internal_user, 'account.group_account_invoice')
+        self._assert_does_not_raise(AccessError, tx.with_user(user).action_refund)
+
+    def test_capture_blocked_for_unauthorized_user(self):
+        """ Test that users who don't have access to a transaction cannot capture it. """
+        self.provider.support_manual_capture = 'full_only'
+        tx = self._create_transaction('redirect', state='authorized')
+        self.assertRaises(AccessError, tx.with_user(self.internal_user).action_capture)
+
+    def test_void_blocked_for_unauthorized_user(self):
+        """ Test that users who don't have access to a transaction cannot void it. """
+        self.provider.support_manual_capture = 'full_only'
+        tx = self._create_transaction('redirect', state='authorized')
+        self.assertRaises(AccessError, tx.with_user(self.internal_user).action_void)
+
+    def test_refund_blocked_for_unauthorized_user(self):
+        """ Test that users who don't have access to a transaction cannot refund it. """
+        self.provider.support_refund = 'full_only'
+        tx = self._create_transaction('redirect', state='done')
+        self.assertRaises(AccessError, tx.with_user(self.internal_user).action_refund)
 
     def test_refunds_count(self):
         self.provider.support_refund = 'full_only'  # Should simply not be False
@@ -23,7 +63,7 @@ class TestPaymentTransaction(PaymentCommon):
                 state='done',
                 operation=operation,  # Override the computed flow
                 source_transaction_id=tx.id,
-            )._reconcile_after_done()
+            )._post_process()
 
         self.assertEqual(
             tx.refunds_count,
@@ -189,3 +229,16 @@ class TestPaymentTransaction(PaymentCommon):
             ['draft', 'pending', 'authorized', 'done'], 'cancel', None
         )
         self.assertEqual(tx.state, 'cancel')
+
+    def test_updating_state_resets_post_processing_status(self):
+        if self.account_payment_installed:
+            self.skipTest("This test should not be run after account_payment is installed.")
+
+        tx = self._create_transaction('redirect', state='draft')
+        tx._set_pending()
+        self.assertFalse(tx.is_post_processed)
+        tx._post_process()
+        self.assertTrue(tx.is_post_processed)
+
+        tx._set_done()
+        self.assertFalse(tx.is_post_processed)
