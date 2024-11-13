@@ -3,16 +3,15 @@
 # 	* website_profile
 # 
 # Translators:
-# Wil Odoo, 2023
-# Jolien De Paepe, 2023
+# Wil Odoo, 2024
 # 
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-10-26 21:56+0000\n"
-"PO-Revision-Date: 2023-10-26 23:09+0000\n"
-"Last-Translator: Jolien De Paepe, 2023\n"
+"PO-Revision-Date: 2024-09-25 09:42+0000\n"
+"Last-Translator: Wil Odoo, 2024\n"
 "Language-Team: Dutch (https://app.transifex.com/odoo/teams/41243/nl/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -176,8 +175,8 @@ msgid ""
 "<span id=\"email_validated_message\">Congratulations! Your email has just "
 "been validated.</span>"
 msgstr ""
-"<span id=\"email_validated_message\">Gefeiciteerd! Jo e-mailadres is zojuist"
-" bevestigd.</span>"
+"<span id=\"email_validated_message\">Gefeliciteerd! Jouw e-mailadres is "
+"zojuist bevestigd.</span>"
 
 #. module: website_profile
 #: model_terms:ir.ui.view,arch_db:website_profile.users_page_header
@@ -529,7 +528,6 @@ msgstr "Geen gebruiker gevonden voor"
 #. module: website_profile
 #. odoo-python
 #: code:addons/website_profile/controllers/main.py:0
-#, python-format
 msgid "Not have enough karma to view other users' profile."
 msgstr "Niet genoeg karma om het profiel van andere gebruikers te bekijken."
 
@@ -581,7 +579,6 @@ msgstr "Deze maand"
 #. module: website_profile
 #. odoo-python
 #: code:addons/website_profile/controllers/main.py:0
-#, python-format
 msgid "This profile is private!"
 msgstr "Dit profiel is privé!"
 
